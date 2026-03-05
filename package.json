@@ -4,17 +4,18 @@
   "description": "",
   "main": "src/app.js",
   "type": "module",
-"scripts": {
-  "dev:backend": "node src/app.js",
-  "dev:frontend": "vite",
-  "build": "vite build",
-  "preview": "vite preview"
-},
+  "scripts": {
+    "dev": "nodemon src/app.js",
+    "dev:frontend": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "express": "^5.2.1"
-  },
-  "devDependencies": {}
+    "cors": "^2.8.6",
+    "express": "^5.2.1",
+    "nodemon": "^3.1.14"
+  }
 }
