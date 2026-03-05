@@ -1,0 +1,20 @@
+{
+  "name": "backend-rutas",
+  "version": "1.0.0",
+  "description": "",
+  "main": "src/app.js",
+  "type": "module",
+"scripts": {
+  "dev:backend": "node src/app.js",
+  "dev:frontend": "vite",
+  "build": "vite build",
+  "preview": "vite preview"
+},
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "express": "^5.2.1"
+  },
+  "devDependencies": {}
+}
