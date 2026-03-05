@@ -1,26 +1,10 @@
 import express from 'express';
-
+import {getTask, updateTask, createTask, deleteTask} from "../controller/tasks.controller.js"
 const tasksRouter = express.Router();
 
-tasksRouter.get('/', (req, res) =>{
-    res
-        .status(200)
-        .json({msn : "Lista de tareas"})
-});
-tasksRouter.post('/', (req, res) =>{
-    res
-        .status(201)
-        .json({msn : "Tarea creada"})
-});
-tasksRouter.put('/', (req, res) =>{
-    res
-        .status(204)
-        .json({msn : "Tarea actualizada"})
-});
-tasksRouter.delete('/', (req, res) =>{
-    res
-        .status(204)
-        .json({msn : "Tarea eliminada"})
-});
+tasksRouter.get('/', getTask)
+tasksRouter.post('/',createTask);
+tasksRouter.put('/', updateTask);
+tasksRouter.delete('/',deleteTask);
 
 export default tasksRouter;
