@@ -1,7 +1,7 @@
 {
   "name": "backend-rutas",
   "version": "1.0.0",
-  "description": "",
+  "description": "Backend Rutas es una API REST desarrollada con Express.js que proporciona funcionalidades para la gestión de tareas y usuarios. El servidor está diseñado para servir como backend para aplicaciones frontend, permitiendo operaciones CRUD en recursos de tareas y usuarios.",
   "main": "src/app.js",
   "type": "module",
   "scripts": {
@@ -17,5 +17,13 @@
     "cors": "^2.8.6",
     "express": "^5.2.1",
     "nodemon": "^3.1.14"
-  }
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/DAN-DELI/backend-task-manager.git"
+  },
+  "bugs": {
+    "url": "https://github.com/DAN-DELI/backend-task-manager/issues"
+  },
+  "homepage": "https://github.com/DAN-DELI/backend-task-manager#readme"
 }
