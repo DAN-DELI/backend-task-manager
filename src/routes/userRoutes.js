@@ -1,26 +1,9 @@
 import express from 'express';
+import { validateUser } from "../controller/users.controller.js";
 
-const usersRouter = express.Router();
+const userRoutes = express.Router();
 
-usersRouter.get('/', (req, res) =>{
-    res
-        .status(200)
-        .json({msn : "Lista de usuarios"})
-});
-usersRouter.post('/', (req, res) =>{
-    res
-        .status(201)
-        .json({msn : "Usuario creado"})
-});
-usersRouter.put('/', (req, res) =>{
-    res
-        .status(204)
-        .json({msn : "Usuario actualizado"})
-});
-usersRouter.delete('/', (req, res) =>{
-    res
-        .status(204)
-        .json({msn : "Usuario eliminado"})
-});
+// Ruta para validar usuario usando el ID de la URL
+userRoutes.get('/validate/:id', validateUser);
 
-export default usersRouter;
+export default userRoutes;
