@@ -1,7 +1,7 @@
 const getTask = (req, res) => {
     res
         .status(200)
-        .json({msn : "Lista de tareas"})
+        .json({msn : "Aquí se listarán las tareas (Endpoint GET funcionando)"})
 };
 
 const createTask = (req, res ) => {
@@ -16,7 +16,13 @@ const createTask = (req, res ) => {
 };
 const updateTask = (req, res ) => {
     const {id} = req.params;
-    console.log(`Actualizamos recurso por id: ${id}`);
+    const {user_id, title, body} = req.body;
+    res
+        .status(200)
+        .json({
+            msn : `tarea ${id} actualizada`,
+            data : {user_id, title, body}
+        })
     
 };
 const deleteTask = (req, res ) => {
