@@ -10,6 +10,9 @@ Backend Rutas es una API REST desarrollada con Express.js que proporciona funcio
 backend-rutas/
 ├── src/
 │   ├── app.js                 # Archivo principal de la aplicación
+    ├── controllers/
+│   │   ├── task.controller.js      # Controladores relacionadas con tareas
+│   │   └── user.controller.js      # Controladores relacionadas con usuarios
 │   └── routes/
 │       ├── taskRoutes.js      # Rutas relacionadas con tareas
 │       └── userRoutes.js      # Rutas relacionadas con usuarios
