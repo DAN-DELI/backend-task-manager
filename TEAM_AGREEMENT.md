@@ -5,14 +5,14 @@ Este documento establece las reglas de convivencia, comunicación y estándares 
 ## 1. Miembros del Equipo y Roles
 | Nombre | Rol | Usuario de GitHub |
 | :--- | :--- | :--- |
-| [Nombre del Aprendiz 1] | Líder (Arquitecto) | `@usuario1` |
+| Jhon Freddy Bueno Arenales | Líder (Arquitecto) | `@DAN-DELI` |
 | [Nombre del Aprendiz 2] | Desarrollador | `@usuario2` |
 | [Nombre del Aprendiz 3] | Desarrollador | `@usuario3` |
 
 ## 2. Canales de Comunicación
 Para mantener el orden y separar lo profesional de lo personal, usaremos los siguientes canales:
-* **Comunicación Oficial y Archivos:** [Ej: correo corporativo / Microsoft Teams]
-* **Urgencias o bloqueos rápidos:** [Ej: Grupo de WhatsApp]
+* **Comunicación Oficial y Archivos:**  Grupo de WhatsApp
+* **Urgencias o bloqueos rápidos:**  Grupo de WhatsApp
 * **Gestión de Tareas y Código:** Estrictamente a través de los *Issues* y *Pull Requests* de GitHub. (No se revisa código por WhatsApp).
 
 ## 3. Horarios y Sincronización
