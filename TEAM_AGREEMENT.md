@@ -6,7 +6,7 @@ Este documento establece las reglas de convivencia, comunicación y estándares 
 | Nombre | Rol | Usuario de GitHub |
 | :--- | :--- | :--- |
 | Jhon Freddy Bueno Arenales | Líder (Arquitecto) | `@DAN-DELI` |
-| Manuel Enrique Serrano Barrajas | Desarrollador | `@Serranomanuel` |
+| Manuel Enrique Serrano Barajas | Desarrollador | `@Serranomanuel` |
 | Wilmer Ferney Ardila Ordoñez | Desarrollador | `@Tachobo` |
 
 ## 2. Canales de Comunicación
