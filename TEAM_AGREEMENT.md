@@ -7,7 +7,7 @@ Este documento establece las reglas de convivencia, comunicación y estándares 
 | :--- | :--- | :--- |
 | Jhon Freddy Bueno Arenales | Líder (Arquitecto) | `@DAN-DELI` |
 | [Nombre del Aprendiz 2] | Desarrollador | `@usuario2` |
-| [Nombre del Aprendiz 3] | Desarrollador | `@usuario3` |
+| [Wilmer Ferney Ardila Ordoñez] | Desarrollador | `@Tachobo` |
 
 ## 2. Canales de Comunicación
 Para mantener el orden y separar lo profesional de lo personal, usaremos los siguientes canales:
