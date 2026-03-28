@@ -51,7 +51,7 @@ export const UserModel = {
             tasks: []
         };
     },
-
+    //tu no has visto nada- comentario para poder hacer pr
     update: async (id, userData) => {
         const { name, email, document, role } = userData;
 
