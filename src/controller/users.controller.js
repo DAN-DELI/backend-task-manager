@@ -10,9 +10,19 @@ export const getUsers = async (req, res) => {
         if (id) {
             const user = await UserModel.findById(id);
             // Si es un solo usuario, lo metemos en un array para consistencia
-            result = user ? [user] : [];
+            if (!user) {
+                return res.status(404).json({ msn: "Usuario no encontrado" });
+            }
+
+            result = [user];
+
         } else if (document) {
             result = await UserModel.findByDocument(document);
+
+            if (result.length === 0) {
+                return res.status(404).json({ msn: "Usuario no encontrado" });
+            }
+
         } else {
             result = await UserModel.findAll();
         }
