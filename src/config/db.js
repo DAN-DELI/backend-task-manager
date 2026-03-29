@@ -1,22 +1,23 @@
 import mysql from 'mysql2/promise';
 
-// Esta parte se cambio, tanto el user como el pasword y la database, por la que se use en el momento
-export const pool = mysql.createPool({
-    host: 'localhost',
-    user: 'wilmer',    
-    password: 'Colombi@1W',      
-    database: 'proyecto_sena', 
+// Configura los parámetros según tu instalación local de MySQL Workbench
+const pool = mysql.createPool({
+    host: process.env.DB_HOST,
+    user: process.env.DB_USER,
+    password: process.env.DB_PASSWORD,
+    database: process.env.DB_NAME,
+    port: process.env.DB_PORT,
     waitForConnections: true,
-    connectionLimit: 10,
-    queueLimit: 0
+  connectionLimit: 10, // Máximo de conexiones simultáneas
+    queueLimit: 0,
 });
 
-
+// Verificación opcional de conexión
 pool.getConnection()
-    .then(conn => {
-        console.log("Conexión a MySQL exitosa (Pool)");
-        conn.release();
+    .then(connection => {
+        console.log('Conexión a la base de datos establecida correctamente');
+        connection.release();
     })
     .catch(err => {
-        console.error("Error conectando a la base de datos:", err.message);
+        console.error('Error al conectar a la base de datos:', err.message);
     });
