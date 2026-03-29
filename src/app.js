@@ -15,12 +15,14 @@ app.get('/', (req, res) =>{
             msn : "Hola, esto es un servidor express (Endpoint raiz funcionando"
         });
 });
-
+app.get('/tasks', (req, res) => {
+    res.json([]); 
+});
 //conexion de rutas
 app.use('/tasks', tasksRouter);
 app.use('/users', usersRouter);
 
-// app.listen(port, ()=>{
-//     console.log(`example app listening on port ${port}`);
+app.listen(port, ()=>{
+    console.log(`example app listening on port ${port}`);
     
-// })
+})
