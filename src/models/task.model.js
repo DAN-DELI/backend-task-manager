@@ -1,4 +1,4 @@
-import { pool } from '../db/database.js'; 
+import { pool } from '../config/db.js'; 
 
 export const getAllTasksFromDB = async () => {
     const [rows] = await pool.query('SELECT * FROM tasks');
