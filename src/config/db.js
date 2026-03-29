@@ -1,22 +1,31 @@
-import mysql from 'mysql2/promise';
+// Importamos la versión de promesas de mysql2
+import mysql from "mysql2/promise";
+// Cargamos las variables de entorno
+import "dotenv/config";
 
-// Esta parte se cambio, tanto el user como el pasword y la database, por la que se use en el momento
-export const pool = mysql.createPool({
-    host: 'localhost',
-    user: 'wilmer',    
-    password: 'Colombi@1W',      
-    database: 'proyecto_sena', 
-    waitForConnections: true,
-    connectionLimit: 10,
-    queueLimit: 0
+// Creamos un "Pool" de conexiones.
+// Es mucho más eficiente que abrir y cerrar una conexión por cada consulta.
+const pool = mysql.createPool({
+  host: process.env.DB_HOST,
+  user: process.env.DB_USER,
+  password: process.env.DB_PASSWORD,
+  database: process.env.DB_NAME,
+  port: process.env.DB_PORT,
+  waitForConnections: true,
+  connectionLimit: 10, // Máximo de conexiones simultáneas
+  queueLimit: 0,
 });
 
+// Prueba de conexión automática al arrancar
+pool
+  .getConnection()
+  .then((connection) => {
+    console.log("Conexión a la base de datos MySQL establecida con éxito");
+    // Liberamos la conexión de vuelta al pool
+    connection.release();
+  })
+  .catch((error) => {
+    console.error("Error al conectar con la base de datos:", error.message);
+  });
 
-pool.getConnection()
-    .then(conn => {
-        console.log("Conexión a MySQL exitosa (Pool)");
-        conn.release();
-    })
-    .catch(err => {
-        console.error("Error conectando a la base de datos:", err.message);
-    });
+export default pool;

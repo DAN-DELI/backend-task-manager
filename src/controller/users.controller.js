@@ -56,7 +56,9 @@ export const createUser = async (req, res) => {
         const newUser = await UserModel.create(req.body);
         res.status(201).json(newUser);
     } catch (error) {
-        res.status(500).json({ msn: "Error al crear el usuario" });
+        res.status(500).json({ msn: "Error al crear el usuario", 
+            errors : [error.message]
+         });
     }
 };
 
