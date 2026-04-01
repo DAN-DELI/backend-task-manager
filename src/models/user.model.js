@@ -1,4 +1,4 @@
-import { pool } from '../config/db.js';
+import pool from '../config/db.js';
 
 export const UserModel = {
 
@@ -13,7 +13,7 @@ export const UserModel = {
 
     findById: async (id) => {
         const [rows] = await pool.query(
-            "SELECT * FROM users WHERE id = ?", 
+            "SELECT * FROM users WHERE id = ?",
             [id]
         );
 
@@ -24,7 +24,7 @@ export const UserModel = {
 
     findByDocument: async (document) => {
         const [rows] = await pool.query(
-            "SELECT * FROM users WHERE document = ?", 
+            "SELECT * FROM users WHERE document = ?",
             [document]
         );
 
@@ -114,7 +114,7 @@ export const UserModel = {
 
     delete: async (id) => {
         const [result] = await pool.query(
-            "DELETE FROM users WHERE id = ?", 
+            "DELETE FROM users WHERE id = ?",
             [id]
         );
 
