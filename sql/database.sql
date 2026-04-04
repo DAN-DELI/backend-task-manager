@@ -31,7 +31,7 @@ CREATE TABLE tasks (
     title VARCHAR(150) NOT NULL,
     description TEXT,
     status ENUM('pendiente', 'en progreso', 'completada') DEFAULT 'pendiente',
-    created_by VARCHAR(50),
+    created_by ENUM('admin', 'user') NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
 
