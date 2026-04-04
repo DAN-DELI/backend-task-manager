@@ -1,8 +1,9 @@
 import { UserModel } from '../models/user.model.js';
+import { errorResponse, successResponse } from '../utils/response.handler.js';
 
 export const getUsers = async (req, res) => {
     try {
-        const { id } = req.params; 
+        const { id } = req.params;
         const { document } = req.query;
 
         let result;
@@ -11,52 +12,40 @@ export const getUsers = async (req, res) => {
             const user = await UserModel.findById(id);
             // Si es un solo usuario, lo metemos en un array para consistencia
             if (!user) {
-                return res.status(404).json({ msn: "Usuario no encontrado" });
+                return errorResponse(res, 404, "Usuario no encontrado", error.message)
             }
-
             result = [user];
 
         } else if (document) {
             result = await UserModel.findByDocument(document);
 
             if (result.length === 0) {
-                return res.status(404).json({ msn: "Usuario no encontrado" });
+                return errorResponse(res, 404, "Usuario no encontrado", error.message)
             }
 
         } else {
             result = await UserModel.findAll();
         }
 
-        // MAQUEO CLAVE: Si el resultado es un array, nos aseguramos de que
-        // cada usuario tenga una propiedad 'tasks' aunque sea vacía.
-        const usersWithTasks = result.map(user => ({
-            ...user,
-            tasks: [] // Esto evita el error del .forEach en el admin.js
-        }));
-
-        if (document && usersWithTasks.length === 0) {
-            return res.status(404).json({ msn: "Usuario no encontrado" });
-        }
-
-        res.status(200).json(usersWithTasks); 
+        return successResponse(res, 200, "Usuarios consultados con éxito", result)
     } catch (error) {
-        res.status(500).json({ msn: "Error al obtener usuarios" });
+        errorResponse(res, 500, "Error al obtener usuarios", error.message)
     }
 };
 
 export const createUser = async (req, res) => {
     try {
-        const { name, email, document} = req.body;
-        
+        const { name, email, document } = req.body;
+
         // Validación básica
         if (!name || !email || !document) {
-            return res.status(400).json({ msn: "Faltan datos obligatorios" });
+            return errorResponse(res, 400, "Faltan datos obligatorios", ["name, email y document son requeridos"]);
         }
 
         const newUser = await UserModel.create(req.body);
-        res.status(201).json(newUser);
+        return successResponse(res, 201, "Usuario creado con exito", newUser)
     } catch (error) {
-        res.status(500).json({ msn: "Error al crear el usuario" });
+        return errorResponse(res, 500, "Error al crear usuario", error.message)
     }
 };
 
@@ -67,15 +56,13 @@ export const updateUser = async (req, res) => {
 
         // PUT exige TODO
         if (!name || !email || !document || !role) {
-            return res.status(400).json({ 
-                msn: "Todos los campos son obligatorios para PUT" 
-            });
+            return errorResponse(res, 400, "Faltan datos obligatorios", ["name, email, document y role son requeridos"]);
         }
 
         const userExists = await UserModel.findById(id);
 
         if (!userExists) {
-            return res.status(404).json({ msn: "Usuario no encontrado" });
+            return errorResponse(res, 400, "Usuario no encontrado", [`Usurio con id ${id} no encontrado`]);
         }
 
         const updatedUser = await UserModel.update(id, {
@@ -85,13 +72,10 @@ export const updateUser = async (req, res) => {
             role
         });
 
-        res.status(200).json({
-            msn: `Usuario con ID ${id} actualizado correctamente (PUT)`,
-            data: updatedUser
-        });
+        return successResponse(res, 200, `Usuario con ID ${id} actualizado correctamente (PUT)`, updatedUser)
 
     } catch (error) {
-        res.status(500).json({ msn: "Error al actualizar usuario" });
+        errorResponse(res, 500, "Error al actualizar usuario", [error.message])
     }
 };
 
@@ -103,24 +87,19 @@ export const updateUserPartial = async (req, res) => {
         const userExists = await UserModel.findById(id);
 
         if (!userExists) {
-            return res.status(404).json({ msn: "Usuario no encontrado" });
+            return errorResponse(res, 404, "Usuario no encontrado", [`No se encontro al usuario con id ${id}`])
         }
 
         if (Object.keys(userData).length === 0) {
-            return res.status(400).json({ 
-                msn: "Debes enviar al menos un campo para actualizar" 
-            });
+            return errorResponse(res, 400, "Debes enviar al menos un campo para actualizar", [])
         }
 
         const updatedUser = await UserModel.updatePartial(id, userData);
 
-        res.status(200).json({
-            msn: `Usuario con ID ${id} actualizado parcialmente (PATCH)`,
-            data: updatedUser
-        });
+        return successResponse(res, 200, `Usuario actualizado exitosamente (PATCH)`, [updatedUser])
 
     } catch (error) {
-        res.status(500).json({ msn: "Error al actualizar parcialmente" });
+        errorResponse(res, 500, "Error al actualizar parcialmente", [error.message])
     }
 };
 
@@ -128,14 +107,15 @@ export const updateUserPartial = async (req, res) => {
 export const deleteUser = async (req, res) => {
     try {
         const { id } = req.params;
+
         const isDeleted = await UserModel.delete(id);
 
         if (!isDeleted) {
-            return res.status(404).json({ msn: "Usuario no encontrado" });
+            return errorResponse(res, 404, "No se pudo eliminar el usuario", [`Usuario con id ${id} no encontrado`])
         }
 
-        res.status(200).json({ msn: `Usuario con ID ${id} eliminado correctamente` });
+        return successResponse(res, 200, `Usuario con ID ${id} eliminado correctamente`)
     } catch (error) {
-        res.status(500).json({ msn: "Error al eliminar" });
+        errorResponse(res, 500, "No se pudo eliminar el usuario", [error.message])
     }
 };
