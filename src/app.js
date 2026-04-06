@@ -3,6 +3,7 @@ import cors from "cors";
 import tasksRouter from './routes/task.Routes.js'
 import usersRouter from './routes/user.Routes.js'
 import { successResponse } from "./utils/response.handler.js";
+import { globalErrorHandler } from "./middlewares/error.middleware.js"
 const app = express();
 app.use(cors());
 app.use(express.json());
@@ -16,6 +17,8 @@ app.get('/', (req, res) => {
 //conexion de rutas
 app.use('/tasks', tasksRouter);
 app.use('/users', usersRouter);
+app.use(globalErrorHandler);
+
 
 app.listen(port, () => {
     console.log(`example app listening on port ${port}`);
