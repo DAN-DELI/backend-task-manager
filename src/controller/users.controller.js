@@ -1,121 +1,96 @@
 import { UserModel } from '../models/user.model.js';
-import { errorResponse, successResponse } from '../utils/response.handler.js';
+import { successResponse } from '../utils/response.handler.js';
+import { catchAsync } from '../utils/catchAsync.js'; // NUEVO: Importamos el wrapper
 
-export const getUsers = async (req, res) => {
-    try {
-        const { id } = req.params;
-        const { document } = req.query;
-
-        let result;
-
-        if (id) {
-            const user = await UserModel.findById(id);
-            // Si es un solo usuario, lo metemos en un array para consistencia
-            if (!user) {
-                return errorResponse(res, 404, "Usuario no encontrado", error.message)
-            }
-            result = [user];
-
-        } else if (document) {
-            result = await UserModel.findByDocument(document);
-
-            if (result.length === 0) {
-                return errorResponse(res, 404, "Usuario no encontrado", error.message)
-            }
-
-        } else {
-            result = await UserModel.findAll();
-        }
-
-        return successResponse(res, 200, "Usuarios consultados con éxito", result)
-    } catch (error) {
-        errorResponse(res, 500, "Error al obtener usuarios", error.message)
-    }
+// Función auxiliar para crear errores operacionales
+const createError = (message, statusCode, details = []) => {
+    const err = new Error(message);
+    err.statusCode = statusCode;
+    err.isOperational = true;
+    err.errors = details.length ? details : [message];
+    return err;
 };
 
-export const createUser = async (req, res) => {
-    try {
-        const { name, email, document } = req.body;
+// NUEVO: Envolvemos el controlador asíncrono con catchAsync()
+export const getUsers = catchAsync(async (req, res, next) => {
+    const { id } = req.params;
+    const { document } = req.query;
+    let result;
 
-        // Validación básica
-        if (!name || !email || !document) {
-            return errorResponse(res, 400, "Faltan datos obligatorios", ["name, email y document son requeridos"]);
+    if (id) {
+        const user = await UserModel.findById(id);
+        if (!user) {
+            return next(createError("Usuario no encontrado", 404));
+        }
+        result = [user];
+
+    } else if (document) {
+        result = await UserModel.findByDocument(document);
+        if (result.length === 0) {
+            return next(createError("Usuario no encontrado", 404));
         }
 
-        const newUser = await UserModel.create(req.body);
-        return successResponse(res, 201, "Usuario creado con exito", newUser)
-    } catch (error) {
-        return errorResponse(res, 500, "Error al crear usuario", error.message)
+    } else {
+        result = await UserModel.findAll();
     }
-};
 
-export const updateUser = async (req, res) => {
-    try {
-        const { id } = req.params;
-        const { name, email, document, role } = req.body;
+    return successResponse(res, 200, "Usuarios consultados con éxito", result);
+});
 
-        // PUT exige TODO
-        if (!name || !email || !document || !role) {
-            return errorResponse(res, 400, "Faltan datos obligatorios", ["name, email, document y role son requeridos"]);
-        }
+export const createUser = catchAsync(async (req, res, next) => {
+    const { name, email, document } = req.body;
 
-        const userExists = await UserModel.findById(id);
-
-        if (!userExists) {
-            return errorResponse(res, 400, "Usuario no encontrado", [`Usurio con id ${id} no encontrado`]);
-        }
-
-        const updatedUser = await UserModel.update(id, {
-            name,
-            email,
-            document,
-            role
-        });
-
-        return successResponse(res, 200, `Usuario con ID ${id} actualizado correctamente (PUT)`, updatedUser)
-
-    } catch (error) {
-        errorResponse(res, 500, "Error al actualizar usuario", [error.message])
+    if (!name || !email || !document) {
+        return next(createError("Faltan datos obligatorios", 400, ["name, email y document son requeridos"]));
     }
-};
 
-export const updateUserPartial = async (req, res) => {
-    try {
-        const { id } = req.params;
-        const userData = req.body;
+    const newUser = await UserModel.create(req.body);
+    return successResponse(res, 201, "Usuario creado con exito", newUser);
+});
 
-        const userExists = await UserModel.findById(id);
+export const updateUser = catchAsync(async (req, res, next) => {
+    const { id } = req.params;
+    const { name, email, document, role } = req.body;
 
-        if (!userExists) {
-            return errorResponse(res, 404, "Usuario no encontrado", [`No se encontro al usuario con id ${id}`])
-        }
-
-        if (Object.keys(userData).length === 0) {
-            return errorResponse(res, 400, "Debes enviar al menos un campo para actualizar", [])
-        }
-
-        const updatedUser = await UserModel.updatePartial(id, userData);
-
-        return successResponse(res, 200, `Usuario actualizado exitosamente (PATCH)`, [updatedUser])
-
-    } catch (error) {
-        errorResponse(res, 500, "Error al actualizar parcialmente", [error.message])
+    if (!name || !email || !document || !role) {
+        return next(createError("Faltan datos obligatorios", 400, ["name, email, document y role son requeridos"]));
     }
-};
 
+    const userExists = await UserModel.findById(id);
 
-export const deleteUser = async (req, res) => {
-    try {
-        const { id } = req.params;
-
-        const isDeleted = await UserModel.delete(id);
-
-        if (!isDeleted) {
-            return errorResponse(res, 404, "No se pudo eliminar el usuario", [`Usuario con id ${id} no encontrado`])
-        }
-
-        return successResponse(res, 200, `Usuario con ID ${id} eliminado correctamente`)
-    } catch (error) {
-        errorResponse(res, 500, "No se pudo eliminar el usuario", [error.message])
+    if (!userExists) {
+        return next(createError("Usuario no encontrado", 400, [`Usuario con id ${id} no encontrado`]));
     }
-};
+
+    const updatedUser = await UserModel.update(id, { name, email, document, role });
+    return successResponse(res, 200, `Usuario con ID ${id} actualizado correctamente (PUT)`, updatedUser);
+});
+
+export const updateUserPartial = catchAsync(async (req, res, next) => {
+    const { id } = req.params;
+    const userData = req.body;
+
+    const userExists = await UserModel.findById(id);
+
+    if (!userExists) {
+        return next(createError("Usuario no encontrado", 404, [`No se encontro al usuario con id ${id}`]));
+    }
+
+    if (Object.keys(userData).length === 0) {
+        return next(createError("Debes enviar al menos un campo para actualizar", 400));
+    }
+
+    const updatedUser = await UserModel.updatePartial(id, userData);
+    return successResponse(res, 200, `Usuario actualizado exitosamente (PATCH)`, [updatedUser]);
+});
+
+export const deleteUser = catchAsync(async (req, res, next) => {
+    const { id } = req.params;
+    const isDeleted = await UserModel.delete(id);
+
+    if (!isDeleted) {
+        return next(createError("No se pudo eliminar el usuario", 404, [`Usuario con id ${id} no encontrado`]));
+    }
+
+    return successResponse(res, 200, `Usuario con ID ${id} eliminado correctamente`);
+});
