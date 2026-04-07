@@ -1,15 +1,7 @@
 import { TaskModel } from '../models/task.model.js';
-import { successResponse } from '../utils/response.handler.js';
-import { catchAsync } from '../utils/catchAsync.js'; // NUEVO: Importamos el wrapper
+import { createError, successResponse } from '../utils/response.handler.js';
+import { catchAsync } from '../utils/catchAsync.js';
 
-// Función auxiliar para crear errores operacionales
-const createError = (message, statusCode, details = []) => {
-    const err = new Error(message);
-    err.statusCode = statusCode;
-    err.isOperational = true;
-    err.errors = details.length ? details : [message];
-    return err;
-};
 
 export const getTask = catchAsync(async (req, res, next) => {
     const tasks = await TaskModel.findAll();
