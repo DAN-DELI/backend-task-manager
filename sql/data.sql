@@ -20,7 +20,7 @@ INSERT INTO users (id, name, email, document, role) VALUES
 (13, 'Don Admin', 'donAdmin@example.com', 12, 'admin');
 
 -- ==========================================
--- 1. POBLAR TASKS
+-- 2. POBLAR TASKS
 -- ==========================================
 INSERT INTO tasks (title, description, status, created_by, user_id) VALUES
 ('Tarea de prueba', 'Asignada a 2 usuarios', 'completada', 'admin', 1),
