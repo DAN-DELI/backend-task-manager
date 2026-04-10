@@ -4,11 +4,7 @@ export const UserModel = {
 
     findAll: async () => {
         const [rows] = await pool.query("SELECT * FROM users");
-
-        return rows.map(user => ({
-            ...user,
-            tasks: []
-        }));
+        return rows;
     },
 
     findById: async (id) => {
@@ -37,38 +33,42 @@ export const UserModel = {
     create: async (userData) => {
         const { name, email, document, role } = userData;
 
+        // Ejecutar el INSERT
         const [result] = await pool.query(
             "INSERT INTO users (name, email, document, role) VALUES (?, ?, ?, ?)",
-            [name, email, document, role || 'user']
+            [name, email, document, role || "user"]
         );
 
-        return {
-            id: result.insertId,
-            name,
-            email,
-            document,
-            role: role || 'user',
-            tasks: []
-        };
+        // Consultar el usuario recién creado
+        const [createdUser] = await pool.query(
+            "SELECT * FROM users WHERE id = ?",
+            [result.insertId]
+        );
+
+        return createdUser[0];
     },
 
     update: async (id, userData) => {
         const { name, email, document, role } = userData;
 
-        await pool.query(
+        // Ejecutar el UPDATE
+        const [result] = await pool.query(
             "UPDATE users SET name = ?, email = ?, document = ?, role = ? WHERE id = ?",
             [name, email, document, role, id]
         );
 
-        return {
-            id,
-            name,
-            email,
-            document,
-            role,
-            tasks: []
-        };
+        // Si no se afectó ninguna fila, significa que el usuario no existe
+        if (result.affectedRows === 0) return null;
+
+        // Consultar el usuario actualizado
+        const [updatedUser] = await pool.query(
+            "SELECT * FROM users WHERE id = ?",
+            [id]
+        );
+
+        return updatedUser[0];
     },
+
 
     updatePartial: async (id, userData) => {
         const fields = [];
@@ -105,11 +105,11 @@ export const UserModel = {
             values
         );
 
-        return {
-            id,
-            ...userData,
-            tasks: []
-        };
+        const [updatedUser] = await pool.query(
+            "SELECT * FROM users WHERE id = ?",
+            [id]
+        );
+        return updatedUser[0];
     },
 
     delete: async (id) => {

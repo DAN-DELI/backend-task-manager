@@ -1,91 +1,73 @@
-import {
-    getAllTasksFromDB,
-    createTaskInDB,
-    updateTaskInDB,
-    deleteTaskInDB,
-    getTaskByIdFromDB
-} from '../models/task.model.js';
+import { TaskModel } from '../models/task.model.js';
+import { createError, successResponse } from '../utils/response.handler.js';
+import { catchAsync } from '../utils/catchAsync.js';
 
-const getTask = async (req, res) => {
-    try {
-        const tasks = await getAllTasksFromDB();
-        res.status(200).json({ msn: "Tareas listadas exitosamente", data: tasks });
-    } catch (error) {
-        res.status(500).json({ msn: "Error al obtener las tareas", error: error.message });
-    }
-};
 
-const getTaskById = async (req, res) => {
+export const getTask = catchAsync(async (req, res, next) => {
+    const tasks = await TaskModel.findAll();
+    return successResponse(res, 200, "Tareas listadas exitosamente", tasks);
+});
+
+export const getTaskById = catchAsync(async (req, res, next) => {
     const { id } = req.params;
+    const task = await TaskModel.findById(id);
 
-    try {
-        const task = await getTaskByIdFromDB(id);
-
-        if (!task) {
-            return res.status(404).json({ msn: `No se encontró ninguna tarea con el ID ${id}` });
-        }
-        res.status(200).json({
-            msn: "Tarea encontrada exitosamente",
-            data: task
-        });
-    } catch (error) {
-        res.status(500).json({ msn: "Error al obtener la tarea", error: error.message });
+    if (!task) {
+        return next(createError("Tarea no encontrada", 404, [`No se encontró ninguna tarea con el ID ${id}`]));
     }
-};
 
-const createTask = async (req, res) => {
-    const { user_id, title, description, status } = req.body;
+    return successResponse(res, 200, "Tarea encontrada exitosamente", task);
+});
 
-    try {
-        const result = await createTaskInDB(user_id, title, description, status);
+export const createTask = catchAsync(async (req, res, next) => {
+    const newTask = await TaskModel.create(req.body);
+    return successResponse(res, 201, "Tarea creada exitosamente", newTask);
+});
 
-        res.status(201).json({
-            msn: "Tarea creada exitosamente",
-            data: { id: result.insertId, user_id, title, description, status }
-        });
-    } catch (error) {
-        res.status(500).json({ msn: "Error al crear la tarea", error: error.message });
-    }
-};
-
-const updateTask = async (req, res) => {
+export const updateTask = catchAsync(async (req, res, next) => {
     const { id } = req.params;
     const { user_id, title, description, status } = req.body;
 
-    try {
-        const result = await updateTaskInDB(id, user_id, title, description, status);
+    const updatedTask = await TaskModel.update(id, {
+        user_id,
+        title,
+        description,
+        status
+    });
 
-        if (result.affectedRows === 0) {
-            return res.status(404).json({ msn: `No se encontró la tarea con el ID ${id} para actualizar` });
-        }
-        res.status(200).json({
-            msn: `Tarea ${id} actualizada exitosamente`,
-            data: { id, user_id, title, description, status }
-        });
-    } catch (error) {
-        res.status(500).json({ msn: "Error al actualizar la tarea", error: error.message });
+    if (!updatedTask) {
+        return next(createError("Error al actualizar la tarea", 404, [`No se encontró la tarea con el ID ${id}`]));
     }
-};
 
-const deleteTask = async (req, res) => {
+    return successResponse(res, 200, "Tarea actualizada exitosamente (PUT)", updatedTask);
+});
+
+export const updateTaskPartial = catchAsync(async (req, res, next) => {
     const { id } = req.params;
-    try {
-        const result = await deleteTaskInDB(id);
+    const taskData = req.body;
 
-        if (result.affectedRows === 0) {
-            return res.status(404).json({ msn: `No se encontró la tarea con el ID ${id} para eliminar` });
-        }
+    const taskExists = await TaskModel.findById(id);
 
-        res.status(200).json({ msn: "Tarea eliminada exitosamente" });
-    } catch (error) {
-        res.status(500).json({ msn: "Error al eliminar la tarea", error: error.message });
+    if (!taskExists) {
+        return next(createError("Tarea no encontrada", 404, [`No se encontró la tarea con id ${id}`]));
     }
-};
 
-export {
-    getTask,
-    getTaskById,
-    createTask,
-    updateTask,
-    deleteTask
-};
+    if (Object.keys(taskData).length === 0) {
+        return next(createError("Error al editar tarea", 400, ["Debes enviar al menos un campo para actualizar"]));
+    }
+
+    const updatedTask = await TaskModel.updatePartial(id, taskData);
+
+    return successResponse(res, 200, `Tarea actualizada exitosamente (PATCH)`, updatedTask);
+});
+
+export const deleteTask = catchAsync(async (req, res, next) => {
+    const { id } = req.params;
+    const isDeleted = await TaskModel.delete(id);
+
+    if (!isDeleted) {
+        return next(createError("Error al eliminar la tarea", 404, [`No se encontró la tarea con id ${id}`]));
+    }
+
+    return successResponse(res, 200, "Tarea eliminada exitosamente");
+});
