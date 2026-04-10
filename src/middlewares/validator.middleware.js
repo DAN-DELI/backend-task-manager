@@ -1,4 +1,4 @@
-import { createError } from "../utils/response.handler";
+import { createError } from "../utils/response.handler.js";
 
 export const validateSchema = (schema) => {
     return (req, res, next) => {
