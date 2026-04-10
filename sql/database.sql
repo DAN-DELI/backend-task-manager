@@ -41,7 +41,7 @@ CREATE TABLE tasks (
     id INT AUTO_INCREMENT PRIMARY KEY,
     user_id INT NOT NULL,
     title VARCHAR(150) NOT NULL,
-    description TEXT,
+    description TEXT NOT NULL,
     status ENUM('pendiente', 'en-progreso', 'completada') DEFAULT 'pendiente',
     created_by ENUM('admin', 'user') NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
