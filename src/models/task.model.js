@@ -1,12 +1,24 @@
 import pool from '../config/db.js';
-
+/**
+ * Modelo de datos para gestionar la tabla 'tasks' en la base de datos.
+ * Contiene métodos estáticos para realizar operaciones CRUD.
+ */
 export const TaskModel = {
 
+    /**
+     * Recupera todas las tareas registradas.
+     * @returns {Promise<Array>} Lista de objetos de tareas.
+     */
     findAll: async () => {
         const [rows] = await pool.query('SELECT * FROM tasks');
         return rows;
     },
 
+    /**
+     * Busca una tarea única por su ID.
+     * @param {number|string} id - ID de la tarea.
+     * @returns {Promise<Object|null>} El objeto de la tarea o null si no existe.
+     */
     findById: async (id) => {
         const [rows] = await pool.query(
             'SELECT * FROM tasks WHERE id = ?',
@@ -15,6 +27,11 @@ export const TaskModel = {
         return rows[0] || null;
     },
 
+    /**
+     * Inserta una nueva tarea y retorna el registro creado.
+     * @param {Object} taskData - Datos de la tarea (user_id, title, description, status, created_by).
+     * @returns {Promise<Object>} El objeto de la tarea recién creada.
+     */
     create: async (taskData) => {
         const { user_id, title, description, status, created_by } = taskData;
 
@@ -32,6 +49,12 @@ export const TaskModel = {
         return rows[0];
     },
 
+    /**
+     * Actualización total de una tarea (Reemplazo de campos).
+     * @param {number|string} id - ID de la tarea a modificar.
+     * @param {Object} taskData - Nuevos datos para los campos.
+     * @returns {Promise<Object|null>} Tarea actualizada o null si no se encontró.
+     */
     update: async (id, taskData) => {
         const { user_id, title, description, status } = taskData;
 
@@ -52,6 +75,14 @@ export const TaskModel = {
         return rows[0];
     },
 
+    /**
+     * Actualización parcial dinámica (Solo campos presentes en taskData).
+     * Construye la consulta SQL dinámicamente según las propiedades enviadas.
+     * @param {number|string} id - ID de la tarea.
+     * @param {Object} taskData - Objeto con campos opcionales.
+     * @returns {Promise<Object>} Tarea con los cambios aplicados.
+     * @throws {Error} Si no se envían campos válidos.
+     */
     updatePartial: async (id, taskData) => {
         const fields = [];
         const values = [];
@@ -95,6 +126,11 @@ export const TaskModel = {
         return rows[0];
     },
 
+    /**
+     * Elimina una tarea de la base de datos de forma física.
+     * @param {number|string} id - ID de la tarea.
+     * @returns {Promise<boolean>} True si se eliminó, false si no existía.
+     */
     delete: async (id) => {
         const [result] = await pool.query(
             'DELETE FROM tasks WHERE id = ?',
