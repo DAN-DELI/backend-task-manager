@@ -1,5 +1,12 @@
 import { createError } from "../utils/response.handler.js";
 
+/**
+ * Middleware para validar el cuerpo de la petición (req.body) contra un esquema de Zod.
+ * Actúa como una capa de seguridad que asegura que los datos de entrada sean correctos
+ * antes de procesarlos en los controladores.
+ * @param {ZodSchema} schema - El esquema de validación definido con la librería Zod.
+ * @returns {Function} Un middleware de Express (req, res, next).
+ */
 export const validateSchema = (schema) => {
     return (req, res, next) => {
         const result = schema.safeParse(req.body);
