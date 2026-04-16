@@ -2,7 +2,16 @@ import { UserModel } from '../models/user.model.js';
 import { createError, successResponse } from '../utils/response.handler.js';
 import { catchAsync } from '../utils/catchAsync.js';
 
-
+/**
+ * Consulta usuarios basándose en diferentes criterios (ID, Documento o todos).
+ * @route GET /users/:id?
+ * @param {Object} req.params - Parámetros de ruta.
+ * @param {string} [req.params.id] - (Opcional) ID del usuario.
+ * @param {Object} req.query - Parámetros de consulta.
+ * @param {string} [req.query.document] - (Opcional) Número de documento.
+ * @returns {Promise<void>} Envía en la respuesta HTTP un array de usuarios encontrados..
+ * @throws {Error} 404 - Si no se encuentra el usuario por ID o documento.
+ */
 export const getUsers = catchAsync(async (req, res, next) => {
     const { id } = req.params;
     const { document } = req.query;
@@ -28,6 +37,16 @@ export const getUsers = catchAsync(async (req, res, next) => {
     return successResponse(res, 200, "Usuarios consultados con éxito", result);
 });
 
+/**
+ * Registra un nuevo usuario en el sistema.
+ * @route POST /users
+ * @param {Object} req.body - Datos del usuario.
+ * @param {string} req.body.name - Nombre completo.
+ * @param {string} req.body.email - Correo electrónico.
+ * @param {string} req.body.document - Documento de identidad.
+ * @returns {Promise<void>} Responde con el usuario creado y status 201.
+ * @throws {Error} 400 - Si faltan campos obligatorios.
+ */
 export const createUser = catchAsync(async (req, res, next) => {
     const { name, email, document } = req.body;
 
@@ -39,6 +58,14 @@ export const createUser = catchAsync(async (req, res, next) => {
     return successResponse(res, 201, "Usuario creado con exito", newUser);
 });
 
+/**
+ * Actualización completa de un usuario (Reemplazo).
+ * @route PUT /users/:id
+ * @param {string} req.params.id - ID del usuario a actualizar.
+ * @param {Object} req.body - Debe incluir name, email, document y role.
+ * @returns {Promise<void>} Responde con el usuario actualizado.
+ * @throws {Error} 400 - Si faltan datos o el usuario no existe.
+ */
 export const updateUser = catchAsync(async (req, res, next) => {
     const { id } = req.params;
     const { name, email, document, role } = req.body;
@@ -57,6 +84,15 @@ export const updateUser = catchAsync(async (req, res, next) => {
     return successResponse(res, 200, `Usuario con ID ${id} actualizado correctamente (PUT)`, updatedUser);
 });
 
+/**
+ * Actualización parcial de un usuario (PATCH).
+ * @route PATCH /users/:id
+ * @param {string} req.params.id - ID del usuario.
+ * @param {Object} req.body - Campos a modificar.
+ * @returns {Promise<void>} Responde con un array que contiene al usuario actualizado.
+ * @throws {Error} 404 - Si el usuario no existe.
+ * @throws {Error} 400 - Si no se envían campos para actualizar.
+ */
 export const updateUserPartial = catchAsync(async (req, res, next) => {
     const { id } = req.params;
     const userData = req.body;
@@ -75,6 +111,13 @@ export const updateUserPartial = catchAsync(async (req, res, next) => {
     return successResponse(res, 200, `Usuario actualizado exitosamente (PATCH)`, [updatedUser]);
 });
 
+/**
+ * Elimina de forma definitiva a un usuario.
+ * @route DELETE /users/:id
+ * @param {string} req.params.id - ID del usuario a eliminar.
+ * @returns {Promise<void>} Responde con mensaje de éxito.
+ * @throws {Error} 404 - Si el ID no corresponde a ningún usuario.
+ */
 export const deleteUser = catchAsync(async (req, res, next) => {
     const { id } = req.params;
     const isDeleted = await UserModel.delete(id);
