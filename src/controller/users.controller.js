@@ -81,7 +81,7 @@ export const updateUser = catchAsync(async (req, res, next) => {
     }
 
     const updatedUser = await UserModel.update(id, { name, email, document, role });
-    return successResponse(res, 200, `Usuario con ID ${id} actualizado correctamente (PUT)`, updatedUser);
+    return successResponse(res, 200, `Usuario actualizado correctamente`, updatedUser);
 });
 
 /**
@@ -108,7 +108,7 @@ export const updateUserPartial = catchAsync(async (req, res, next) => {
     }
 
     const updatedUser = await UserModel.updatePartial(id, userData);
-    return successResponse(res, 200, `Usuario actualizado exitosamente (PATCH)`, [updatedUser]);
+    return successResponse(res, 200, `Usuario actualizado exitosamente`, [updatedUser]);
 });
 
 /**
@@ -126,5 +126,5 @@ export const deleteUser = catchAsync(async (req, res, next) => {
         return next(createError("No se pudo eliminar el usuario", 404, [`Usuario con id ${id} no encontrado`]));
     }
 
-    return successResponse(res, 200, `Usuario con ID ${id} eliminado correctamente`);
+    return successResponse(res, 200, `Usuario eliminado correctamente`);
 });
