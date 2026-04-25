@@ -62,7 +62,7 @@ export const updateTask = catchAsync(async (req, res, next) => {
         return next(createError("Error al actualizar la tarea", 404, [`No se encontró la tarea con el ID ${id}`]));
     }
 
-    return successResponse(res, 200, "Tarea actualizada exitosamente (PUT)", updatedTask);
+    return successResponse(res, 200, "Tarea actualizada exitosamente", updatedTask);
 });
 
 /**
@@ -89,7 +89,7 @@ export const updateTaskPartial = catchAsync(async (req, res, next) => {
 
     const updatedTask = await TaskModel.updatePartial(id, taskData);
 
-    return successResponse(res, 200, `Tarea actualizada exitosamente (PATCH)`, updatedTask);
+    return successResponse(res, 200, `Tarea actualizada exitosamente`, updatedTask);
 });
 
 /**
