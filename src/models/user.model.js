@@ -28,7 +28,7 @@ export const UserModel = {
 
         if (!rows[0]) return null;
 
-        return { ...rows[0], tasks: [] };
+        return rows[0];
     },
     /**
      * Busca usuarios por su número de documento.
@@ -41,10 +41,7 @@ export const UserModel = {
             [document]
         );
 
-        return rows.map(user => ({
-            ...user,
-            tasks: []
-        }));
+        return rows[0];
     },
 
     /**
