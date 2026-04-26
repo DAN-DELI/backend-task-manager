@@ -110,3 +110,51 @@ export const login = catchAsync(async (req, res, next) => {
         user: publicUser,
     });
 });
+
+// RENOVACION ACCESS TOKEN
+
+/**
+ * Renueva el Access Token de un usuario a partir de un Refresh Token válido.
+ * Verifica la autenticidad del token, su vigencia y que coincida con el almacenado
+ * en la base de datos. Retorna únicamente un nuevo Access Token de corta duración.
+ * @route POST /api/auth/refresh
+ * @param {Object} req - Objeto de solicitud de Express.
+ * @param {Object} req.body - Cuerpo de la petición.
+ * @param {string} req.body.refreshToken - Token de refresco de larga duración.
+ * @param {Object} res - Objeto de respuesta de Express.
+ * @param {Function} next - Función para delegar errores al middleware global.
+ * @returns {Promise<void>} Responde con un nuevo accessToken y status 200.
+ */
+export const refreshToken = catchAsync(async (req, res, next) => {
+    // Paso 1: Obtener el Refresh Token del cuerpo de la solicitud
+    const { refreshToken } = req.body;
+
+    // Paso 2: Verificar la autenticidad y vigencia del token con JWT
+    let decoded;
+    try {
+        decoded = jwt.verify(refreshToken, process.env.JWT_REFRESH_SECRET);
+    } catch (err) {
+        return next(createError("Sesión expirada", 401, [
+            "El token de refresco es inválido o ha expirado. Por favor inicie sesión nuevamente."
+        ]));
+    }
+
+    // Paso 3: Validar que el usuario exista y que el token coincida con el de la base de datos
+    const user = await UserModel.findById(decoded.id);
+
+    if (!user || user.refresh_token !== refreshToken) {
+        return next(createError("Acceso denegado", 401, [
+            "Token de refresco inválido o revocado"
+        ]));
+    }
+
+    // Paso 4: Firmar un nuevo Access Token de corta duración
+    const accessToken = jwt.sign(
+        { id: user.id, role: user.role },
+        process.env.JWT_SECRET,
+        { expiresIn: "15m" }
+    );
+
+    // Paso 5: Responder con el nuevo Access Token
+    return successResponse(res, 200, "Token renovado exitosamente", { accessToken });
+});
