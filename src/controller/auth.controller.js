@@ -1,4 +1,5 @@
 import bcrypt from 'bcrypt';
+import jwt from "jsonwebtoken";
 import { UserModel } from '../models/user.model.js';
 import { createError, successResponse } from '../utils/response.handler.js';
 import { catchAsync } from '../utils/catchAsync.js';
@@ -85,6 +86,10 @@ export const login = catchAsync(async (req, res, next) => {
         return next(error);
     }
 
+    if (!process.env.JWT_SECRET) {
+        const error = createError("JWT_SECRET no está definido", 401);
+        return next(error);
+    }
     // Paso 4: Generar el par de tokens JWT
     const payload = { id: user.id, role: user.role };
 
@@ -101,8 +106,13 @@ export const login = catchAsync(async (req, res, next) => {
     // Paso 5: Persistir el Refresh Token en la base de datos para control de sesiones
     await UserModel.updateRefreshToken(user.id, refreshToken);
 
-    // Paso 6: Limpiar campos sensibles y responder con los tokens y datos públicos
-    const { password: _, refresh_token: __, ...publicUser } = user;
+    // Paso 6: Estructurar datos publicos del usuario
+    const publicUser = {
+        id: user.id,
+        name: user.name,
+        document: user.document,
+        email: user.email,
+    }
 
     return successResponse(res, 200, "Inicio de sesión exitoso", {
         accessToken,
