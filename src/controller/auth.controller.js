@@ -40,7 +40,7 @@ export const register = catchAsync(async (req, res, next) => {
         name,
         email,
         document,
-        password: hashedPassword,
+        password_hash: hashedPassword,
         role: "user",
     });
 
@@ -78,7 +78,7 @@ export const login = catchAsync(async (req, res, next) => {
     }
 
     // Paso 3: Comparar la contraseña recibida con el hash almacenado
-    const isPasswordValid = await bcrypt.compare(password, user.password);
+    const isPasswordValid = await bcrypt.compare(password, user.password_hash);
 
     if (!isPasswordValid) {
         const error = createError("Credenciales inválidas", 401);
