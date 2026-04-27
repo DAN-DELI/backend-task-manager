@@ -1,11 +1,12 @@
 import express from 'express';
-import { 
-    getTask, 
-    updateTask, 
-    createTask, 
-    deleteTask, 
-    getTaskById, 
-    updateTaskPartial 
+import { verifyToken } from "../middlewares/src/auth.middleware.js" // Validador de token
+import {
+    getTask,
+    updateTask,
+    createTask,
+    deleteTask,
+    getTaskById,
+    updateTaskPartial
 } from "../controller/tasks.controller.js";
 import { validateSchema } from "../middlewares/validator.middleware.js";
 import { taskSchema, taskPartialSchema } from "../schemas/task.schema.js";
@@ -17,44 +18,48 @@ import { taskSchema, taskPartialSchema } from "../schemas/task.schema.js";
  */
 const tasksRouter = express.Router();
 
+// Todas las rutas son protegidas con la verificacion del token
+tasksRouter.use(verifyToken)
+
 /**
  * @route   GET /api/tasks
  * @desc    Obtener todas las tareas
- * @access  Público
+ * @access  Privado
  */
 tasksRouter.get('/', getTask);
 
 /**
  * @route   GET /api/tasks/:id
  * @desc    Obtener una tarea por su ID
- * @access  Público
+ * @access  Privado
  */
 tasksRouter.get('/:id', getTaskById);
 
 /**
  * @route   POST /api/tasks
  * @desc    Crear una nueva tarea
- * @middleware validateSchema - Valida que el body cumpla con el esquema completo de tareas.
+ * @access  Privado
  */
 tasksRouter.post('/', validateSchema(taskSchema), createTask);
 
 /**
  * @route   PUT /api/tasks/:id
  * @desc    Actualizar totalmente una tarea (Reemplazo)
- * @middleware validateSchema - Requiere todos los campos obligatorios del esquema.
+ * @access  Privado
  */
 tasksRouter.put('/:id', validateSchema(taskSchema), updateTask);
 
 /**
  * @route   PATCH /api/tasks/:id
  * @desc    Actualizar parcialmente una tarea
- * @middleware validateSchema - Usa un esquema flexible donde los campos son opcionales.
+ * @access  Privado
  */
 tasksRouter.patch('/:id', validateSchema(taskPartialSchema), updateTaskPartial);
 
 /**
  * @route   DELETE /api/tasks/:id
  * @desc    Eliminar una tarea del sistema
+ * @access  Privado
  */
 tasksRouter.delete('/:id', deleteTask);
 

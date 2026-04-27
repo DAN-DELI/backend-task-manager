@@ -10,21 +10,21 @@ import { validateSchema } from '../middlewares/validator.middleware.js'; // Midd
 const authRouter = express.Router();
 
 /**
- * @route   GET /api/auth
+ * @route   GET /api/auth/register
  * @desc    Registrar un nuevo usuario en el sistema
  * @access  Público
  */
 authRouter.post("/register", validateSchema(registerSchema), register);
 
 /**
- * @route   GET /api/auth
+ * @route   GET /api/auth/login
  * @desc    Realiza login 
  * @access  Público
  */
 authRouter.post("/login", validateSchema(loginSchema), login);
 
 /**
- * @route   GET /api/auth
+ * @route   GET /api/auth/refreshToken
  * @desc    Refresca toquen de acceso
  * @access  Público
  */
