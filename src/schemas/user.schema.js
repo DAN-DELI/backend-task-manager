@@ -30,6 +30,14 @@ export const userSchema = z.object({
         .max(20, "El documento no puede exceder los 20 dígitos")
         .regex(/^[1-9][0-9]*$/, "El documento solo debe contener números y no puede iniciar en 0"),
 
+    /** Contraseña: Obligatoria, string, entre 8 y 120 caracteres. */
+    password: z.string({
+        required_error: "La contraseña es obligatoria",
+        invalid_type_error: "La contraseña debe ser una cadena de texto",
+    })
+        .min(8, "La contraseña debe tener al menos 8 caracteres")
+        .max(120, "La contraseña no puede exceder los 120 caracteres"),
+
     /** Rol: Opcional, solo permite los valores "admin" o "user". */
     role: z.enum(["admin", "user"], {
         invalid_type_error: "El rol es inválido",
