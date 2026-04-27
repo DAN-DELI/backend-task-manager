@@ -1,5 +1,8 @@
 import express from 'express';
-import { login, refreshToken, register } from '../controller/auth.controller.js';
+import { login, refreshToken, register } from '../controller/auth.controller.js'; // Funciones del controlador
+import { registerSchema, loginSchema, refreshTokenSchema } from "../schemas/auth.schema.js" // Esquemas 
+import { validateSchema } from '../middlewares/validator.middleware.js'; // Middleware validador de esquemas
+
 
 /**
  * Enrutador de autenticacion (auth).
@@ -11,20 +14,20 @@ const authRouter = express.Router();
  * @desc    Registrar un nuevo usuario en el sistema
  * @access  Público
  */
-authRouter.post("/register", register);
+authRouter.post("/register", validateSchema(registerSchema), register);
 
 /**
  * @route   GET /api/auth
  * @desc    Realiza login 
  * @access  Público
  */
-authRouter.post("/login", login);
+authRouter.post("/login", validateSchema(loginSchema), login);
 
 /**
  * @route   GET /api/auth
  * @desc    Refresca toquen de acceso
  * @access  Público
  */
-authRouter.post("/refresh", refreshToken);
+authRouter.post("/refresh", validateSchema(refreshTokenSchema), refreshToken);
 
 export default authRouter;

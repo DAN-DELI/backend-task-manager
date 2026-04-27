@@ -154,6 +154,13 @@ export const UserModel = {
 
         return result.affectedRows > 0;
     },
+
+    /**
+     * Actualiza el token de refresco de un usuario.
+     * @param {number|string} userId - ID del usuario.
+     * @param {number|string}refresh_token - Token de refresco del usuario.
+     * @returns {Promise<boolean>} True si el usuario fue eliminado, false de lo contrario.
+     */
     updateRefreshToken: async (userId, refresh_token) => {
         await pool.query("UPDATE users SET refresh_token = ? WHERE id = ?",
             [refresh_token, userId]
