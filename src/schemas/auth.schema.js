@@ -55,3 +55,34 @@ export const registerSchema = z.object({
   })
 
 }).strict();
+
+/**
+ * @constant {z.ZodObject} loginSchema
+ * @description Esquema estricto para validar el cuerpo de la petición en el inicio de sesión (POST /auth/login).
+ * Rechaza objetos vacíos, campos adicionales no permitidos y asegura el formato correcto de las credenciales.
+ */
+export const loginSchema = z.object({
+  
+  // Validación para el documento de identidad en el login
+  document: z.string({
+    required_error: "El documento es obligatorio",
+    invalid_type_error: "El documento debe ser una cadena de texto"
+  }).regex(/^[1-9][0-9]*$/, {
+    message: "El documento solo debe contener números y no puede iniciar en 0"
+  }).min(5, {
+    message: "El documento debe tener al menos 5 dígitos"
+  }).max(20, {
+    message: "El documento no puede exceder los 20 dígitos"
+  }),
+
+  // Validación para la contraseña en el login
+  password: z.string({
+    required_error: "La contraseña es obligatoria",
+    invalid_type_error: "La contraseña debe ser una cadena de texto"
+  }).min(8, {
+    message: "La contraseña debe tener al menos 8 caracteres"
+  }).max(80, {
+    message: "La contraseña no puede exceder los 80 caracteres"
+  })
+
+}).strict(); 
