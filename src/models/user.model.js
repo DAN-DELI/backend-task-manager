@@ -153,5 +153,10 @@ export const UserModel = {
         );
 
         return result.affectedRows > 0;
+    },
+    updateRefreshToken: async (userId, refresh_token) => {
+        await pool.query("UPDATE users SET refresh_token = ? WHERE id = ?",
+            [refresh_token, userId]
+        );
     }
 };
