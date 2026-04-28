@@ -86,3 +86,20 @@ export const loginSchema = z.object({
   })
 
 }).strict();
+
+/**
+ * @constant {z.ZodObject} refreshTokenSchema
+ * @description Esquema estricto para validar la renovación de tokens (POST /auth/refresh).
+ * Garantiza que el refreshToken esté presente y no sea una cadena vacía.
+ */
+export const refreshTokenSchema = z.object({
+  
+  // Validación para el token de refresco
+  refreshToken: z.string({
+    required_error: "El token de refresco es obligatorio",
+    invalid_type_error: "El token de refresco debe ser una cadena de texto"
+  }).min(1, {
+    message: "El token de refresco no puede estar vacío"
+  })
+
+}).strict();
