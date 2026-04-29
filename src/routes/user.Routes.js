@@ -1,5 +1,5 @@
 import express from 'express';
-import { verifyToken } from "../middlewares/src/auth.middleware.js" // Validador de token
+import { verifyToken } from "../middlewares/auth.middleware.js" // Validador de token
 import { getUsers, createUser, updateUser, updateUserPartial, deleteUser } from '../controller/users.controller.js';
 import { validateSchema } from '../middlewares/validator.middleware.js';
 import { userSchema, userPartialSchema } from '../schemas/user.schema.js';

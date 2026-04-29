@@ -1,5 +1,5 @@
 import express from 'express';
-import { verifyToken } from "../middlewares/src/auth.middleware.js" // Validador de token
+import { verifyToken } from "../middlewares/auth.middleware.js" // Validador de token
 import {
     getTask,
     updateTask,
