@@ -46,21 +46,21 @@ export const UserModel = {
 
     /**
      * Registra un nuevo usuario y devuelve el objeto creado.
-     * @param {Object} userData - Datos del usuario (name, email, document, role).
-     * @returns {Promise<Object>} Datos del usuario recién insertado.
+     * @param {Object} userData - Datos del usuario.
+     * @returns {Promise<Object>} Datos relevantes del usuario recién insertado.
      */
     create: async (userData) => {
-        const { name, email, document, role } = userData;
+        const { name, email, document, password_hash, role } = userData;
 
         // Ejecutar el INSERT
         const [result] = await pool.query(
-            "INSERT INTO users (name, email, document, role) VALUES (?, ?, ?, ?)",
-            [name, email, document, role || "user"]
+            "INSERT INTO users (name, email, document, password_hash, role) VALUES (?, ?, ?, ?, ?)",
+            [name, email, document, password_hash, role || "user"]
         );
 
         // Consultar el usuario recién creado
         const [createdUser] = await pool.query(
-            "SELECT * FROM users WHERE id = ?",
+            "SELECT id, name, email, document, role FROM users WHERE id = ?",
             [result.insertId]
         );
 
@@ -153,5 +153,17 @@ export const UserModel = {
         );
 
         return result.affectedRows > 0;
+    },
+
+    /**
+     * Actualiza el token de refresco de un usuario.
+     * @param {number|string} userId - ID del usuario.
+     * @param {number|string}refresh_token - Token de refresco del usuario.
+     * @returns {Promise<boolean>} True si el usuario fue eliminado, false de lo contrario.
+     */
+    updateRefreshToken: async (userId, refresh_token) => {
+        await pool.query("UPDATE users SET refresh_token = ? WHERE id = ?",
+            [refresh_token, userId]
+        );
     }
 };

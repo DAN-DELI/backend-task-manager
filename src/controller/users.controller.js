@@ -1,6 +1,7 @@
 import { UserModel } from '../models/user.model.js';
 import { createError, successResponse } from '../utils/response.handler.js';
 import { catchAsync } from '../utils/catchAsync.js';
+import bcrypt from 'bcrypt'; // bcrypt para encriptar contraseña
 
 /**
  * Consulta usuarios basándose en diferentes criterios (ID, Documento o todos).
@@ -40,21 +41,27 @@ export const getUsers = catchAsync(async (req, res, next) => {
 /**
  * Registra un nuevo usuario en el sistema.
  * @route POST /users
- * @param {Object} req.body - Datos del usuario.
- * @param {string} req.body.name - Nombre completo.
- * @param {string} req.body.email - Correo electrónico.
- * @param {string} req.body.document - Documento de identidad.
  * @returns {Promise<void>} Responde con el usuario creado y status 201.
- * @throws {Error} 400 - Si faltan campos obligatorios.
  */
 export const createUser = catchAsync(async (req, res, next) => {
-    const { name, email, document } = req.body;
+    const { name, email, document, password, role } = req.body;
 
-    if (!name || !email || !document) {
-        return next(createError("Faltan datos obligatorios", 400, ["name, email y document son requeridos"]));
-    }
+    // Hash de contraseña
+    const salt = await bcrypt.genSalt(10);
+    const password_hash = await bcrypt.hash(password, salt);
 
-    const newUser = await UserModel.create(req.body);
+    // Construcción del objeto limpio
+    const userData = {
+        name,
+        email,
+        document,
+        role,
+        password_hash
+    };
+
+    // Creación en DB
+    const newUser = await UserModel.create(userData);
+
     return successResponse(res, 201, "Usuario creado con exito", newUser);
 });
 

@@ -2,13 +2,10 @@ import express from "express";
 import cors from "cors";
 import tasksRouter from './routes/task.Routes.js'
 import usersRouter from './routes/user.Routes.js'
+import authRouter from "./routes/auth.route.js";
 import { successResponse } from "./utils/response.handler.js";
 import { globalErrorHandler } from "./middlewares/error.middleware.js"
 
-/**
- * Instancia principal de la aplicación Express.
- * @type {express.Application}
- */
 const app = express();
 
 /** * Configuración de Middlewares globales 
@@ -31,8 +28,10 @@ app.get('/', (req, res) => {
     successResponse(res, 200, "Hola, esto es un servidor express (Endpoint raiz funcionando)")
 });
 
+
 /** * Registro de rutas modulares del sistema 
  */
+app.use("/api/auth", authRouter); // Prefijo para rutas de autenticacion
 app.use('/tasks', tasksRouter); // Prefijo para rutas de tareas
 app.use('/users', usersRouter); // Prefijo para rutas de usuarios
 
