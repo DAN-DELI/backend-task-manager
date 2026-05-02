@@ -5,25 +5,24 @@
 -- Crear usuario
 CREATE USER IF NOT EXISTS 'app_user_3233198'@'localhost' IDENTIFIED BY '#ADSO_3233198';
 
--- Permisos (puedes dejar ALL si no te han restringido)
-GRANT ALL PRIVILEGES ON *.* TO 'app_user_3233198'@'localhost';
+-- Crear base de datos
+CREATE DATABASE IF NOT EXISTS inventario_task_manager;
+
+-- Permisos
+GRANT ALL PRIVILEGES ON inventario_task_manager.* TO 'app_user_3233198'@'localhost';
 
 FLUSH PRIVILEGES;
 
 
 -- ==========================================
--- SECCIÓN 2: ESTRUCTURA (EJECUTAR COMO app_user)
+-- SECCIÓN 2: ESTRUCTURA (EJECUTAR COMO user)
 -- ==========================================
-
--- Crear base de datos
-CREATE DATABASE IF NOT EXISTS inventario_task_manager;
-
 -- Usar la base
 USE inventario_task_manager;
 
--- ==========================================
--- TABLA USERS
--- ==========================================
+-- ------------------------------------------
+-- TABLA users
+-- ------------------------------------------
 CREATE TABLE users (
     id INT AUTO_INCREMENT PRIMARY KEY,
     name VARCHAR(100) NOT NULL,
@@ -31,21 +30,19 @@ CREATE TABLE users (
     document VARCHAR(20) NOT NULL UNIQUE,
     password_hash VARCHAR(255) NOT NULL,
     refresh_token VARCHAR (500) NULL,
-    role ENUM('admin', 'user') DEFAULT 'user',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 );
 
--- ==========================================
--- TABLA TASKS
--- ==========================================
+-- ------------------------------------------
+-- TABLA tasks
+-- ------------------------------------------
 CREATE TABLE tasks (
     id INT AUTO_INCREMENT PRIMARY KEY,
     user_id INT NOT NULL,
     title VARCHAR(150) NOT NULL,
     description TEXT NOT NULL,
     status ENUM('pendiente', 'en-progreso', 'completada') DEFAULT 'pendiente',
-    created_by ENUM('admin', 'user') NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
 
@@ -54,4 +51,61 @@ CREATE TABLE tasks (
     REFERENCES users(id)
     ON DELETE RESTRICT
     ON UPDATE CASCADE
+);
+
+-- ------------------------------------------
+-- ------------ TABLAS RBAC -----------------
+-- ------------------------------------------
+
+-- ------------------------------------------
+-- TABLA roles
+-- ------------------------------------------
+CREATE TABLE roles (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(50) NOT NULL UNIQUE,
+    description VARCHAR(255),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+
+-- ------------------------------------------
+-- TABLA permissions
+-- ------------------------------------------
+CREATE TABLE permissions (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(50) NOT NULL UNIQUE,
+    code VARCHAR(50) NOT NULL UNIQUE,
+    description VARCHAR(255),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+
+-- ------------------------------------------
+-- TABLA role_permissions (pivote: roles <-> permissions)
+-- ------------------------------------------
+CREATE TABLE role_permissions (
+    role_id INT NOT NULL,
+    permission_id INT NOT NULL,
+    PRIMARY KEY (role_id, permission_id),
+    CONSTRAINT fk_rp_role 
+        FOREIGN KEY (role_id) REFERENCES roles(id) 
+        ON DELETE CASCADE,
+    CONSTRAINT fk_rp_permission 
+        FOREIGN KEY (permission_id) REFERENCES permissions(id) 
+        ON DELETE CASCADE
+);
+
+-- ------------------------------------------
+-- TABLA user_roles (Pivote: Usuarios <-> Roles)
+-- ------------------------------------------
+CREATE TABLE user_roles (
+    user_id INT NOT NULL,
+    role_id INT NOT NULL,
+    PRIMARY KEY (user_id, role_id),
+    CONSTRAINT fk_ur_user 
+        FOREIGN KEY (user_id) REFERENCES users(id) 
+        ON DELETE CASCADE,
+    CONSTRAINT fk_ur_role 
+        FOREIGN KEY (role_id) REFERENCES roles(id) 
+        ON DELETE CASCADE
 );
