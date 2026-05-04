@@ -159,11 +159,127 @@ export const UserModel = {
      * Actualiza el token de refresco de un usuario.
      * @param {number|string} userId - ID del usuario.
      * @param {number|string}refresh_token - Token de refresco del usuario.
-     * @returns {Promise<boolean>} True si el usuario fue eliminado, false de lo contrario.
+     * @returns {Promise<void>}
      */
     updateRefreshToken: async (userId, refresh_token) => {
         await pool.query("UPDATE users SET refresh_token = ? WHERE id = ?",
             [refresh_token, userId]
         );
-    }
+    },
+
+    // MÉTODOS DE ROLES Y PERMISOS (RBAC)
+
+    /**
+     * Obtiene todos los roles asignados a un usuario.
+     * Realiza un JOIN entre user_roles y roles para retornar el detalle completo de cada rol.
+     * @param {number|string} userId ID del usuario.
+     * @returns {Promise<Array>} Lista de roles asignados al usuario.
+     */
+    getRoles: async (userId) => {
+        const [rows] = await pool.query(
+            `SELECT r.id, r.name, r.description
+            FROM user_roles ur
+            INNER JOIN roles r ON ur.role_id = r.id
+            WHERE ur.user_id = ?`,
+            [userId]
+        );
+
+        return rows;
+    },
+
+    /**
+     * Obtiene la lista plana de permisos efectivos de un usuario aplicando DISTINCT
+     * sobre los códigos de permiso para evitar duplicados entre roles.
+     * Une las tablas user_roles, role_permissions y permissions.
+     * @param {number|string} userId ID del usuario.
+     * @returns {Promise<Array>} Lista de permisos únicos del usuario.
+     */
+    getPermissions: async (userId) => {
+        const [rows] = await pool.query(
+            `SELECT DISTINCT p.id, p.name, p.code, p.description
+            FROM user_roles ur
+            INNER JOIN role_permissions rp ON ur.role_id = rp.role_id
+            INNER JOIN permissions p ON rp.permission_id = p.id
+            WHERE ur.user_id = ?`,
+            [userId]
+        );
+
+        return rows;
+    },
+
+    /**
+     * Obtiene los roles de un usuario junto con los códigos de permisos de cada rol,
+     * formateado como arreglo de objetos { id, name, permissions: [...códigos] }.
+     * @param {number|string} userId ID del usuario.
+     * @returns {Promise<Array>} Arreglo de roles con sus permisos anidados.
+     */
+    getRolesWithPermissions: async (userId) => {
+        const [rows] = await pool.query(
+            `SELECT r.id, r.name, p.code
+            FROM user_roles ur
+            INNER JOIN roles r ON ur.role_id = r.id
+            LEFT JOIN role_permissions rp ON r.id = rp.role_id
+            LEFT JOIN permissions p ON rp.permission_id = p.id
+            WHERE ur.user_id = ?
+            ORDER BY r.id`,
+            [userId]
+        );
+
+        // Agrupar los códigos de permisos por rol
+        const rolesMap = new Map();
+
+        for (const row of rows) {
+            if (!rolesMap.has(row.id)) {
+                rolesMap.set(row.id, {
+                    id: row.id,
+                    name: row.name,
+                    permissions: [],
+                });
+            }
+
+            if (row.code) {
+                rolesMap.get(row.id).permissions.push(row.code);
+            }
+        }
+
+        return Array.from(rolesMap.values());
+    },
+
+    /**
+     * Sincroniza los roles de un usuario en una sola transacción atómica.
+     * Elimina todas las asignaciones actuales en user_roles e inserta las nuevas.
+     * @param {number|string} userId ID del usuario a sincronizar.
+     * @param {number[]} roleIds Array de IDs de roles a asignar.
+     * @returns {Promise<void>}
+     * @throws {Error} Si la transacción falla, se realiza rollback automático.
+     */
+    syncRoles: async (userId, roleIds) => {
+        const connection = await pool.getConnection();
+
+        try {
+            await connection.beginTransaction();
+
+            // Paso 1: Eliminar todas las asignaciones actuales del usuario
+            await connection.query(
+                'DELETE FROM user_roles WHERE user_id = ?',
+                [userId]
+            );
+
+            // Paso 2: Insertar las nuevas asignaciones (si es que hay alguna)
+            if (roleIds.length > 0) {
+                const rows = roleIds.map((roleId) => [userId, roleId]);
+
+                await connection.query(
+                    'INSERT INTO user_roles (user_id, role_id) VALUES ?',
+                    [rows]
+                );
+            }
+            await connection.commit();
+        } catch (error) {
+            await connection.rollback();
+            throw error;
+        } finally {
+            connection.release();
+        }
+    },
 };
