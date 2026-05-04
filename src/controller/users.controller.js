@@ -24,13 +24,11 @@ export const getUsers = catchAsync(async (req, res, next) => {
             return next(createError("Usuario no encontrado", 404));
         }
         result = [user];
-
     } else if (document) {
         result = await UserModel.findByDocument(document);
         if (result.length === 0) {
             return next(createError("Usuario no encontrado", 404));
         }
-
     } else {
         result = await UserModel.findAll();
     }
@@ -82,12 +80,12 @@ export const updateUser = catchAsync(async (req, res, next) => {
     }
 
     const userExists = await UserModel.findById(id);
-
     if (!userExists) {
         return next(createError("Usuario no encontrado", 400, [`Usuario con id ${id} no encontrado`]));
     }
 
     const updatedUser = await UserModel.update(id, { name, email, document, role });
+
     return successResponse(res, 200, `Usuario actualizado correctamente`, updatedUser);
 });
 
@@ -105,7 +103,6 @@ export const updateUserPartial = catchAsync(async (req, res, next) => {
     const userData = req.body;
 
     const userExists = await UserModel.findById(id);
-
     if (!userExists) {
         return next(createError("Usuario no encontrado", 404, [`No se encontro al usuario con id ${id}`]));
     }
@@ -115,6 +112,7 @@ export const updateUserPartial = catchAsync(async (req, res, next) => {
     }
 
     const updatedUser = await UserModel.updatePartial(id, userData);
+
     return successResponse(res, 200, `Usuario actualizado exitosamente`, [updatedUser]);
 });
 
@@ -127,11 +125,72 @@ export const updateUserPartial = catchAsync(async (req, res, next) => {
  */
 export const deleteUser = catchAsync(async (req, res, next) => {
     const { id } = req.params;
-    const isDeleted = await UserModel.delete(id);
 
+    const isDeleted = await UserModel.delete(id);
     if (!isDeleted) {
         return next(createError("No se pudo eliminar el usuario", 404, [`Usuario con id ${id} no encontrado`]));
     }
 
     return successResponse(res, 200, `Usuario eliminado correctamente`);
+});
+
+
+/**
+ * Obtiene los roles asignados a un usuario específico.
+ * @param {Object} req - Objeto de solicitud de Express.
+ * @param {Object} res - Objeto de respuesta de Express.
+ * @param {Function} next - Función para delegar errores.
+ * @returns {Promise<void>} Arreglo con la información de los roles asignados.
+ */
+export const getUserRoles = catchAsync(async (req, res, next) => {
+    const { id } = req.params;
+
+    // Lógica clave: Validar la existencia del usuario antes de consultar sus roles
+    const userExists = await UserModel.findById(id);
+    if (!userExists) {
+        return next(createError("Usuario no encontrado", 404, [`No se encontró al usuario con id ${id}`]));
+    }
+
+    const roles = await UserModel.getRoles(id);
+    return successResponse(res, 200, "Roles del usuario obtenidos con éxito", roles);
+});
+
+/**
+ * Obtiene los permisos efectivos (únicos) de un usuario aplicando DISTINCT.
+ * @param {Object} req - Objeto de solicitud de Express.
+ * @param {Object} res - Objeto de respuesta de Express.
+ * @param {Function} next - Función para delegar errores.
+ * @returns {Promise<void>} Arreglo plano con los códigos de los permisos.
+ */
+export const getUserPermissions = catchAsync(async (req, res, next) => {
+    const { id } = req.params;
+
+    const userExists = await UserModel.findById(id);
+    if (!userExists) {
+        return next(createError("Usuario no encontrado", 404, [`No se encontró al usuario con id ${id}`]));
+    }
+
+    // Lógica clave: Obtener lista plana de permisos sin duplicados
+    const permissions = await UserModel.getPermissions(id);
+    return successResponse(res, 200, "Permisos del usuario obtenidos con éxito", permissions);
+});
+
+/**
+ * Obtiene un resumen estructurado combinando los roles de un usuario con sus respectivos permisos.
+ * @param {Object} req - Objeto de solicitud de Express.
+ * @param {Object} res - Objeto de respuesta de Express.
+ * @param {Function} next - Función para delegar errores.
+ * @returns {Promise<void>} Arreglo de objetos (rol y su lista de permisos).
+ */
+export const getUserRolesWithPermissions = catchAsync(async (req, res, next) => {
+    const { id } = req.params;
+
+    const userExists = await UserModel.findById(id);
+    if (!userExists) {
+        return next(createError("Usuario no encontrado", 404, [`No se encontró al usuario con id ${id}`]));
+    }
+
+    // Lógica clave: Obtener estructura anidada de roles con permisos asociados
+    const rolesWithPermissions = await UserModel.getRolesWithPermissions(id);
+    return successResponse(res, 200, "Roles y permisos del usuario obtenidos con éxito", rolesWithPermissions);
 });
