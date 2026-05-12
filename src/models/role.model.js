@@ -29,6 +29,20 @@ export const RoleModel = {
     },
 
     /**
+     * Busca un rol por su nombre exacto.
+     * Utilizado para verificar duplicados antes de crear un nuevo rol.
+     * @param {string} name Nombre del rol.
+     * @returns {Promise<Object|null>} El objeto del rol o null si no existe.
+     */
+    findByName: async (name) => {
+        const [rows] = await pool.query(
+            'SELECT * FROM roles WHERE name = ?',
+            [name]
+        );
+        return rows[0] || null;
+    },
+
+    /**
      * Inserta un nuevo rol y retorna el registro creado.
      * @param {Object} data Datos del rol.
      * @param {string} data.name  Nombre del rol (único).
