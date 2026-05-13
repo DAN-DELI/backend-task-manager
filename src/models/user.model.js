@@ -50,17 +50,17 @@ export const UserModel = {
      * @returns {Promise<Object>} Datos relevantes del usuario recién insertado.
      */
     create: async (userData) => {
-        const { name, email, document, password_hash, role } = userData;
+        const { name, email, document, password_hash } = userData;
 
         // Ejecutar el INSERT
         const [result] = await pool.query(
-            "INSERT INTO users (name, email, document, password_hash, role) VALUES (?, ?, ?, ?, ?)",
-            [name, email, document, password_hash, role || "user"]
+            "INSERT INTO users (name, email, document, password_hash) VALUES (?, ?, ?, ?)",
+            [name, email, document, password_hash]
         );
 
         // Consultar el usuario recién creado
         const [createdUser] = await pool.query(
-            "SELECT id, name, email, document, role FROM users WHERE id = ?",
+            "SELECT id, name, email, document FROM users WHERE id = ?",
             [result.insertId]
         );
 

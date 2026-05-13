@@ -37,11 +37,6 @@ export const userSchema = z.object({
     })
         .min(8, "La contraseña debe tener al menos 8 caracteres")
         .max(120, "La contraseña no puede exceder los 120 caracteres"),
-
-    /** Rol: Opcional, solo permite los valores "admin" o "user". */
-    role: z.enum(["admin", "user"], {
-        invalid_type_error: "El rol es inválido",
-    }).optional(),
 });
 
 /**
