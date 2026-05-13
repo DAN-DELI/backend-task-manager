@@ -42,7 +42,7 @@ export const getUsers = catchAsync(async (req, res, next) => {
  * @returns {Promise<void>} Responde con el usuario creado y status 201.
  */
 export const createUser = catchAsync(async (req, res, next) => {
-    const { name, email, document, password, role } = req.body;
+    const { name, email, document, password } = req.body;
 
     // Hash de contraseña
     const salt = await bcrypt.genSalt(10);
@@ -53,7 +53,6 @@ export const createUser = catchAsync(async (req, res, next) => {
         name,
         email,
         document,
-        role,
         password_hash
     };
 
