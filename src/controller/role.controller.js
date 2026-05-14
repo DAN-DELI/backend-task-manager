@@ -163,7 +163,7 @@ export const assignRolePermissions = catchAsync(async (req, res, next) => {
     // Lógica clave: Confirmar que el rol exista antes de sincronizar sus permisos
     const roleExists = await RoleModel.findById(id);
     if (!roleExists) {
-        return next(createError("Rol no encontrado", 404, [`El ID de rol ${id} no existe en el sistema`]));
+        return next(createError("Rol no encontrado", 404, [`El rol de ID ${id} no existe en el sistema`]));
     }
 
     // Lógica clave: Sincronizar permisos (DELETE + INSERT) en la tabla pivote role_permissions
