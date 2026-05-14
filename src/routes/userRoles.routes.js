@@ -2,6 +2,8 @@ import express from 'express';
 import { assignRolesToUser } from '../controller/user-role.controller.js';
 import { checkPermission } from '../middlewares/permissions.middleware.js';
 import { verifyToken } from '../middlewares/auth.middleware.js';
+import { validateSchema } from '../middlewares/validator.middleware.js';
+import { syncUserRolesSchema } from '../schemas/role.schema.js';
 
 
 /**
@@ -17,7 +19,7 @@ userRolesRouter.use(verifyToken);
  * @desc    Sincroniza los roles de un usuario
  * @access  Privado
  */
-userRolesRouter.post("/assign", checkPermission("user-roles.assign"), assignRolesToUser)
+userRolesRouter.post("/assign", checkPermission("user-roles.assign"), validateSchema(syncUserRolesSchema), assignRolesToUser)
 
 
 export default userRolesRouter;

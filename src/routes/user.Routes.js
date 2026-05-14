@@ -4,6 +4,7 @@ import { getUsers, createUser, updateUser, updateUserPartial, deleteUser, getUse
 import { validateSchema } from '../middlewares/validator.middleware.js';
 import { userSchema, userPartialSchema } from '../schemas/user.schema.js';
 import { checkPermission } from '../middlewares/permissions.middleware.js';
+import { idParamSchema } from '../schemas/role.schema.js';
 
 /**
  * Enrutador de Usuarios (Users).
@@ -27,28 +28,28 @@ usersRouter.get('/', checkPermission("users.view"), getUsers);
  * @desc    Obtener un usuario específico por su ID
  * @access  Privado
  */
-usersRouter.get('/:id', checkPermission("users.view"), getUsers);
+usersRouter.get('/:id', checkPermission("users.view"), validateSchema(idParamSchema, "params"), getUsers);
 
 /**
  * @route   GET /users/:id/roles
  * @desc    Obtener roles de un usuario
  * @access  Privado
  */
-usersRouter.get("/:id/roles", checkPermission("roles.view"), getUserRoles);
+usersRouter.get("/:id/roles", checkPermission("roles.view"), validateSchema(idParamSchema, "params"), getUserRoles);
 
 /**
  * @route   GET /users/:id/permissions
  * @desc    Obtener permisos de un usuario
  * @access  Privado
  */
-usersRouter.get("/:id/permissions", checkPermission("permissions.view"), getUserPermissions);
+usersRouter.get("/:id/permissions", checkPermission("permissions.view"), validateSchema(idParamSchema, "params"), getUserPermissions);
 
 /**
  * @route   GET /users/:id/roles-with-permissions
  * @desc    Obtener roles y permisos de un usuario
  * @access  Privado
  */
-usersRouter.get("/:id/roles-with-permissions", checkPermission("roles.view"), getUserRolesWithPermissions);
+usersRouter.get("/:id/roles-with-permissions", checkPermission("roles.view"), validateSchema(idParamSchema, "params"), getUserRolesWithPermissions);
 
 /**
  * @route   POST /users
@@ -76,6 +77,6 @@ usersRouter.patch('/:id', checkPermission("users.update"), validateSchema(userPa
  * @desc    Eliminar un usuario del sistema
  * @access  Privado
  */
-usersRouter.delete('/:id', checkPermission("users.delete"), deleteUser);
+usersRouter.delete('/:id', checkPermission("users.delete"), validateSchema(idParamSchema, "params"), deleteUser);
 
 export default usersRouter;

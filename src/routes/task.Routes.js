@@ -11,6 +11,7 @@ import {
 import { validateSchema } from "../middlewares/validator.middleware.js";
 import { taskSchema, taskPartialSchema } from "../schemas/task.schema.js";
 import { checkPermission } from '../middlewares/permissions.middleware.js';
+import { idParamSchema } from '../schemas/role.schema.js';
 
 /**
  * Enrutador de tareas (Tasks).
@@ -34,7 +35,7 @@ tasksRouter.get('/', checkPermission("tasks.view"), getTask);
  * @desc    Obtener una tarea por su ID
  * @access  Privado
  */
-tasksRouter.get('/:id', checkPermission("tasks.view"), getTaskById);
+tasksRouter.get('/:id', checkPermission("tasks.view"), validateSchema(idParamSchema, "params"), getTaskById);
 
 /**
  * @route   POST /api/tasks
@@ -62,6 +63,6 @@ tasksRouter.patch('/:id', checkPermission("tasks.update"), validateSchema(taskPa
  * @desc    Eliminar una tarea del sistema
  * @access  Privado
  */
-tasksRouter.delete('/:id', checkPermission("tasks.delete"), deleteTask);
+tasksRouter.delete('/:id', checkPermission("tasks.delete"), validateSchema(idParamSchema, "params"), deleteTask);
 
 export default tasksRouter;
