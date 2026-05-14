@@ -1,32 +1,43 @@
 import { createError } from "../utils/response.handler.js";
 
+
 /**
- * Middleware para validar el cuerpo de la petición (req.body) contra un esquema de Zod.
- * Actúa como una capa de seguridad que asegura que los datos de entrada sean correctos
- * antes de procesarlos en los controladores.
- * @param {ZodSchema} schema - El esquema de validación definido con la librería Zod.
- * @returns {Function} Un middleware de Express (req, res, next).
+ * Middleware genérico para validar datos de la petición contra un esquema de Zod.
+ * Soporta validación de body, params y query.
+ * @param {ZodSchema} schema - El esquema de validación definido con Zod.
+ * @param {"body" | "params" | "query"} source - Origen de los datos a validar. Por defecto: "body".
+ * @returns {Function} Middleware de Express (req, res, next).
  */
-export const validateSchema = (schema) => {
+export const validateSchema = (schema, source = "body") => {
     return (req, res, next) => {
-        const result = schema.safeParse(req.body);
+        const dataToValidate = req[source];
+
+        // Si la fuente no existe (ej: params en una ruta sin parámetros), evitamos undefined
+        if (dataToValidate === undefined) {
+            const error = createError(
+                `No se encontraron datos en ${source} para validar`,
+                400
+            );
+            return next(error);
+        }
+
+        const result = schema.safeParse(dataToValidate);
 
         if (!result.success) {
             const structuredErrors = result.error.issues.map((issue) => {
                 let finalMessage = issue.message;
 
-                // Si detectamos que Zod escupió su error por defecto en inglés por un campo faltante
+                // Normalización de mensajes por defecto de Zod para campos faltantes
                 if (finalMessage.includes("received undefined")) {
                     finalMessage = "Este campo es obligatorio";
                 }
 
                 return {
-                    field: issue.path.length > 0 ? issue.path[0] : "body",
+                    field: issue.path.length > 0 ? issue.path[0] : source,
                     message: finalMessage,
                 };
             });
 
-            // Estructuraccion de error
             const validationError = createError(
                 "Error de validación en los datos enviados",
                 400,
@@ -36,7 +47,8 @@ export const validateSchema = (schema) => {
             return next(validationError);
         }
 
-        req.body = result.data;
+        // Sobrescribimos la propiedad validada (body, params o query) con los datos transformados
+        req[source] = result.data;
         next();
     };
 };
