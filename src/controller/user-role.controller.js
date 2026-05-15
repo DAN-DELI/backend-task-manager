@@ -20,7 +20,7 @@ export const assignRolesToUser = catchAsync(async (req, res, next) => {
 
     // Lógica clave: Validar primero la existencia del usuario antes de proceder
     const userExists = await UserModel.findById(userId);
-    
+
     if (!userExists) {
         return next(createError("Usuario no encontrado", 404, [`El ID de usuario ${userId} no existe en el sistema`]));
     }
@@ -29,5 +29,8 @@ export const assignRolesToUser = catchAsync(async (req, res, next) => {
     // Este método debe encargarse de la transacción (DELETE e INSERT) en la tabla pivote
     await UserModel.syncRoles(userId, roleIds);
 
-    return successResponse(res, 200, "Roles asignados al usuario exitosamente");
+    // Verificar que si se asignaron los roles
+    const roles = await UserModel.getRoles(userId);
+
+    return successResponse(res, 200, "Roles asignados al usuario exitosamente", roles);
 });
