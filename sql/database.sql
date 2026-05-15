@@ -109,3 +109,33 @@ CREATE TABLE user_roles (
         FOREIGN KEY (role_id) REFERENCES roles(id) 
         ON DELETE CASCADE
 );
+
+-- ------------------------------------------
+-- TABLA password_reset_tokens
+-- ------------------------------------------
+CREATE TABLE IF NOT EXISTS password_reset_tokens (
+    id         INT AUTO_INCREMENT PRIMARY KEY,
+    user_id    INT NOT NULL,
+    token      VARCHAR(64) NOT NULL UNIQUE,
+    expires_at DATETIME NOT NULL,
+    used       TINYINT(1) DEFAULT 0,  -- 0 = no usado, 1 = ya usado
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT fk_prt_user
+        FOREIGN KEY (user_id) REFERENCES users(id)
+        ON DELETE CASCADE
+);
+
+-- ------------------------------------------
+-- TABLA password_history
+-- ------------------------------------------
+CREATE TABLE password_history (
+    id            INT AUTO_INCREMENT PRIMARY KEY,
+    user_id       INT          NOT NULL,
+    password_hash VARCHAR(255) NOT NULL,
+    created_at    TIMESTAMP    DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT fk_ph_user
+        FOREIGN KEY (user_id) REFERENCES users(id)
+        ON DELETE CASCADE
+);
