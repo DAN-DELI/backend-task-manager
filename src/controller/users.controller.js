@@ -1,4 +1,5 @@
 import { UserModel } from '../models/user.model.js';
+import { PasswordResetModel } from '../models/password-reset.model.js';
 import { createError, successResponse } from '../utils/response.handler.js';
 import { catchAsync } from '../utils/catchAsync.js';
 import bcrypt from 'bcrypt'; // bcrypt para encriptar contraseña
@@ -61,6 +62,9 @@ export const createUser = catchAsync(async (req, res, next) => {
 
     // Creación en DB
     const newUser = await UserModel.create(userData);
+
+    // Registrar la primera contraseña en el historial
+    await PasswordResetModel.saveToHistory(newUser.id, password_hash);
 
     return successResponse(res, 201, "Usuario creado con exito", newUser);
 });
