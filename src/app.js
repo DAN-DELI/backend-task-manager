@@ -1,9 +1,9 @@
 import express from "express";
 import cors from "cors";
-import tasksRouter from './routes/task.routes.js'
-import usersRouter from './routes/user.routes.js'
-import authRouter from "./routes/auth.routes.js";
-import forgotRouter from "./routes/forgot-password.routes.js";
+import tasksRouter from './routes/task.Routes.js'
+import usersRouter from './routes/user.Routes.js'
+import authRouter from "./routes/auth.route.js";
+import forgotRouter from "./routes/forgot-password.route.js";
 import { successResponse } from "./utils/response.handler.js";
 import { globalErrorHandler } from "./middlewares/error.middleware.js"
 import roleRouter from "./routes/role.routes.js";
@@ -39,8 +39,8 @@ app.get('/', (req, res) => {
  */
 app.use("/api/auth", authRouter); // Prefijo para rutas de autenticacion
 app.use("/api/auth", forgotRouter);
-app.use('/tasks', tasksRouter); // Prefijo para rutas de tareas
-app.use('/users', usersRouter); // Prefijo para rutas de usuarios
+app.use('/api/tasks', tasksRouter); // Prefijo para rutas de tareas
+app.use('/api/users', usersRouter); // Prefijo para rutas de usuarios
 
 // Rutas RBCA
 app.use('/api/roles', roleRouter); // Prefijo para ruta de roles

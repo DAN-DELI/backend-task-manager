@@ -16,33 +16,34 @@ const usersRouter = express.Router();
 // Todas las rutas son protegidas con la verificacion del token
 usersRouter.use(verifyToken);
 
-/**
- * @route   GET /users
- * @desc    Obtener listado de todos los usuarios o filtrar por query (?document=...)
- * @access  Privado
- */
-usersRouter.get('/', checkPermission("users.view"), getUsers);
 
 /**
  * @route   GET /users/:id
  * @desc    Obtener un usuario específico por su ID
  * @access  Privado
- */
+*/
 usersRouter.get('/:id', checkPermission("users.view"), validateSchema(idParamSchema, "params"), getUsers);
 
 /**
  * @route   GET /users/:id/roles
  * @desc    Obtener roles de un usuario
  * @access  Privado
- */
+*/
 usersRouter.get("/:id/roles", checkPermission("roles.view"), validateSchema(idParamSchema, "params"), getUserRoles);
 
 /**
  * @route   GET /users/:id/permissions
  * @desc    Obtener permisos de un usuario
  * @access  Privado
- */
+*/
 usersRouter.get("/:id/permissions", checkPermission("permissions.view"), validateSchema(idParamSchema, "params"), getUserPermissions);
+
+/**
+ * @route   GET /users
+ * @desc    Obtener listado de todos los usuarios o filtrar por query (?document=...)
+ * @access  Privado
+ */
+usersRouter.get('/', checkPermission("users.view"), getUsers);
 
 /**
  * @route   GET /users/:id/roles-with-permissions
@@ -60,17 +61,19 @@ usersRouter.post('/', checkPermission("users.create"), validateSchema(userSchema
 
 /**
  * @route   PUT /users/:id
- * @desc    Actualización completa de un usuario
+ * @desc    Actualización completa de un usuario (Reemplazo)
  * @access  Privado
+ * @note    CORRECCIÓN: Usa userSchema (campos obligatorios) en lugar de userPartialSchema.
+ *          Además valida el ID numérico en params para evitar errores SQL.
  */
-usersRouter.put('/:id', checkPermission("users.update"), validateSchema(userPartialSchema), updateUser);
+usersRouter.put('/:id', checkPermission("users.update"), validateSchema(idParamSchema, "params"), validateSchema(userSchema), updateUser);
 
 /**
  * @route   PATCH /users/:id
  * @desc    Actualización parcial de un usuario
  * @access  Privado
  */
-usersRouter.patch('/:id', checkPermission("users.update"), validateSchema(userPartialSchema), updateUserPartial);
+usersRouter.patch('/:id', checkPermission("users.update"), validateSchema(idParamSchema, "params"), validateSchema(userPartialSchema), updateUserPartial);
 
 /**
  * @route   DELETE /users/:id

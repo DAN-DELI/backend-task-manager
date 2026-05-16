@@ -30,6 +30,7 @@ CREATE TABLE users (
     document VARCHAR(20) NOT NULL UNIQUE,
     password_hash VARCHAR(255) NOT NULL,
     refresh_token VARCHAR (500) NULL,
+    role VARCHAR(50) NOT NULL DEFAULT 'user',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 );
@@ -43,14 +44,14 @@ CREATE TABLE tasks (
     title VARCHAR(150) NOT NULL,
     description TEXT NOT NULL,
     status ENUM('pendiente', 'en-progreso', 'completada') DEFAULT 'pendiente',
+    submission_url VARCHAR(500) NULL,
+    grade DECIMAL(5,2) NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-
     CONSTRAINT fk_task_user
-    FOREIGN KEY (user_id)
-    REFERENCES users(id)
-    ON DELETE RESTRICT
-    ON UPDATE CASCADE
+        FOREIGN KEY (user_id) REFERENCES users(id)
+        ON DELETE RESTRICT
+        ON UPDATE CASCADE
 );
 
 -- ------------------------------------------
