@@ -29,16 +29,16 @@ export const TaskModel = {
 
     /**
      * Inserta una nueva tarea y retorna el registro creado.
-     * @param {Object} taskData - Datos de la tarea (user_id, title, description, status, created_by).
+     * @param {Object} taskData - Datos de la tarea (user_id, title, description, status, created_at).
      * @returns {Promise<Object>} El objeto de la tarea recién creada.
      */
     create: async (taskData) => {
-        const { user_id, title, description, status, created_by } = taskData;
+        const { user_id, title, description, status } = taskData;
 
         const [result] = await pool.query(
-            `INSERT INTO tasks (user_id, title, description, status, created_by)
-             VALUES (?, ?, ?, ?, ?)`,
-            [user_id, title, description, status, created_by]
+            `INSERT INTO tasks (user_id, title, description, status)
+             VALUES (?, ?, ?, ?)`,
+            [user_id, title, description, status]
         );
 
         const [rows] = await pool.query(

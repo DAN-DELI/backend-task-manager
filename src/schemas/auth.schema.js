@@ -13,7 +13,7 @@ import { z } from 'zod';
  * Rechaza objetos vacíos, campos adicionales no permitidos y valida tipos, formatos y longitudes.
  */
 export const registerSchema = z.object({
-  
+
   // Validación para el nombre completo del usuario
   name: z.string({
     required_error: "El nombre es obligatorio",
@@ -62,7 +62,7 @@ export const registerSchema = z.object({
  * Rechaza objetos vacíos, campos adicionales no permitidos y asegura el formato correcto de las credenciales.
  */
 export const loginSchema = z.object({
-  
+
   // Validación para el documento de identidad en el login
   document: z.string({
     required_error: "El documento es obligatorio",
@@ -93,7 +93,7 @@ export const loginSchema = z.object({
  * Garantiza que el refreshToken esté presente y no sea una cadena vacía.
  */
 export const refreshTokenSchema = z.object({
-  
+
   // Validación para el token de refresco
   refreshToken: z.string({
     required_error: "El token de refresco es obligatorio",

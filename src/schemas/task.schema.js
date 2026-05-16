@@ -18,24 +18,19 @@ export const taskSchema = z.object({
         required_error: "El título es obligatorio",
         invalid_type_error: "El título debe ser una cadena de texto",
     }).min(5, "El título debe tener al menos 5 caracteres")
-      .max(150, "El título no puede exceder los 150 caracteres"),
+        .max(150, "El título no puede exceder los 150 caracteres"),
 
     /** Descripción detallada: Obligatoria, entre 5 y 2000 caracteres. */
     description: z.string({
         required_error: "La descripción es obligatoria",
         invalid_type_error: "La descripción debe ser una cadena de texto",
     }).min(5, "La descripción debe tener al menos 5 caracteres")
-      .max(2000, "La descripción no puede exceder los 2000 caracteres"),
+        .max(2000, "La descripción no puede exceder los 2000 caracteres"),
 
     /** Estado: Opcional, solo permite 'pendiente', 'en-progreso' o 'completada'. */
     status: z.enum(['pendiente', 'en-progreso', 'completada'], {
         errorMap: () => ({ message: "El estado es inválido" }),
-    }).optional(), 
-
-    /** Creador: Define el rol que origina la tarea (admin o user). */
-    created_by: z.enum(['admin', 'user'], {
-        errorMap: () => ({ message: "El creador es inválido" }),
-    })
+    }).optional()
 });
 
 /**

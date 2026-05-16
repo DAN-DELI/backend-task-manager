@@ -10,6 +10,8 @@ import {
 } from "../controller/tasks.controller.js";
 import { validateSchema } from "../middlewares/validator.middleware.js";
 import { taskSchema, taskPartialSchema } from "../schemas/task.schema.js";
+import { checkPermission } from '../middlewares/permissions.middleware.js';
+import { idParamSchema } from '../schemas/role.schema.js';
 
 /**
  * Enrutador de tareas (Tasks).
@@ -19,48 +21,48 @@ import { taskSchema, taskPartialSchema } from "../schemas/task.schema.js";
 const tasksRouter = express.Router();
 
 // Todas las rutas son protegidas con la verificacion del token
-tasksRouter.use(verifyToken)
+tasksRouter.use(verifyToken);
 
 /**
  * @route   GET /api/tasks
  * @desc    Obtener todas las tareas
  * @access  Privado
  */
-tasksRouter.get('/', getTask);
+tasksRouter.get('/', checkPermission("tasks.view"), getTask);
 
 /**
  * @route   GET /api/tasks/:id
  * @desc    Obtener una tarea por su ID
  * @access  Privado
  */
-tasksRouter.get('/:id', getTaskById);
+tasksRouter.get('/:id', checkPermission("tasks.view"), validateSchema(idParamSchema, "params"), getTaskById);
 
 /**
  * @route   POST /api/tasks
  * @desc    Crear una nueva tarea
  * @access  Privado
  */
-tasksRouter.post('/', validateSchema(taskSchema), createTask);
+tasksRouter.post('/', checkPermission("tasks.create"), validateSchema(taskSchema), createTask);
 
 /**
  * @route   PUT /api/tasks/:id
  * @desc    Actualizar totalmente una tarea (Reemplazo)
  * @access  Privado
  */
-tasksRouter.put('/:id', validateSchema(taskSchema), updateTask);
+tasksRouter.put('/:id', checkPermission("tasks.update"), validateSchema(taskSchema), updateTask);
 
 /**
  * @route   PATCH /api/tasks/:id
  * @desc    Actualizar parcialmente una tarea
  * @access  Privado
  */
-tasksRouter.patch('/:id', validateSchema(taskPartialSchema), updateTaskPartial);
+tasksRouter.patch('/:id', checkPermission("tasks.update"), validateSchema(taskPartialSchema), updateTaskPartial);
 
 /**
  * @route   DELETE /api/tasks/:id
  * @desc    Eliminar una tarea del sistema
  * @access  Privado
  */
-tasksRouter.delete('/:id', deleteTask);
+tasksRouter.delete('/:id', checkPermission("tasks.delete"), validateSchema(idParamSchema, "params"), deleteTask);
 
 export default tasksRouter;

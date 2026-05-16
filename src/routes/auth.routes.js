@@ -9,6 +9,7 @@ import { validateSchema } from '../middlewares/validator.middleware.js'; // Midd
  */
 const authRouter = express.Router();
 
+
 /**
  * @route   GET /api/auth/register
  * @desc    Registrar un nuevo usuario en el sistema

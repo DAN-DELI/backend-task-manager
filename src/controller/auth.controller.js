@@ -25,7 +25,6 @@ export const register = catchAsync(async (req, res, next) => {
 
     // Paso 2: Verificar que el documento no esté registrado previamente
     const existingUser = await UserModel.findByDocument(document);
-
     if (existingUser) {
         return next(createError("El usuario ya se encuentra registrado", 400, [
             { field: "document", message: "Ya existe un usuario registrado con este documento" }
@@ -52,11 +51,10 @@ export const register = catchAsync(async (req, res, next) => {
 });
 
 // LOGIN
-
 /**
  * Autentica a un usuario y genera un par de tokens JWT para el manejo de sesión.
- * Valida las credenciales, compara la contraseña y retorna un Access Token
- * de corta duración y un Refresh Token de larga duración.
+ * Adicionalmente, consulta y devuelve la estructura completa de roles y permisos
+ * efectivos del usuario en el sistema.
  * @route POST /api/auth/login
  * @param {Object} req - Objeto de solicitud de Express.
  * @param {Object} req.body - Cuerpo de la petición ya validado por el middleware.
@@ -64,7 +62,7 @@ export const register = catchAsync(async (req, res, next) => {
  * @param {string} req.body.password - Contraseña en texto plano.
  * @param {Object} res - Objeto de respuesta de Express.
  * @param {Function} next - Función para delegar errores al middleware global.
- * @returns {Promise} Responde con los tokens generados y los datos públicos del usuario con status 200.
+ * @returns {Promise} Responde con los tokens y los datos públicos del usuario (incluyendo roles y permisos) con status 200.
  */
 export const login = catchAsync(async (req, res, next) => {
     // Paso 1: Extraer las credenciales del cuerpo de la solicitud
@@ -72,7 +70,6 @@ export const login = catchAsync(async (req, res, next) => {
 
     // Paso 2: Verificar que el usuario exista en la base de datos
     const user = await UserModel.findByDocument(document);
-
     if (!user) {
         const error = createError("Credenciales inválidas", 401);
         return next(error);
@@ -80,7 +77,6 @@ export const login = catchAsync(async (req, res, next) => {
 
     // Paso 3: Comparar la contraseña recibida con el hash almacenado
     const isPasswordValid = await bcrypt.compare(password, user.password_hash);
-
     if (!isPasswordValid) {
         const error = createError("Credenciales inválidas", 401);
         return next(error);
@@ -90,7 +86,8 @@ export const login = catchAsync(async (req, res, next) => {
         const error = createError("JWT_SECRET no está definido", 401);
         return next(error);
     }
-    // Paso 4: Generar el par de tokens JWT
+
+    // Paso 4: Generar el par de tokens JWT (Payload ligero sin incluir roles extensos ni permisos)
     const payload = { id: user.id, role: user.role };
 
     // Access Token: corta duración, para autenticar peticiones a rutas protegidas
@@ -106,13 +103,19 @@ export const login = catchAsync(async (req, res, next) => {
     // Paso 5: Persistir el Refresh Token en la base de datos para control de sesiones
     await UserModel.updateRefreshToken(user.id, refreshToken);
 
-    // Paso 6: Estructurar datos publicos del usuario
+    // Lógica clave: Consultar los roles y permisos efectivos (sin duplicados) asociados al usuario
+    const userRoles = await UserModel.getRoles(user.id);
+    const userPermissions = await UserModel.getPermissions(user.id);
+
+    // Paso 6: Estructurar datos públicos del usuario, inyectando roles y permisos consultados
     const publicUser = {
         id: user.id,
         name: user.name,
         document: user.document,
         email: user.email,
-    }
+        roles: userRoles,
+        permissions: userPermissions
+    };
 
     return successResponse(res, 200, "Inicio de sesión exitoso", {
         accessToken,
@@ -122,7 +125,6 @@ export const login = catchAsync(async (req, res, next) => {
 });
 
 // RENOVACION ACCESS TOKEN
-
 /**
  * Renueva el Access Token de un usuario a partir de un Refresh Token válido.
  * Verifica la autenticidad del token, su vigencia y que coincida con el almacenado
@@ -151,7 +153,6 @@ export const refreshToken = catchAsync(async (req, res, next) => {
 
     // Paso 3: Validar que el usuario exista y que el token coincida con el de la base de datos
     const user = await UserModel.findById(decoded.id);
-
     if (!user || user.refresh_token !== refreshToken) {
         return next(createError("Acceso denegado", 401, [
             "Token de refresco inválido o revocado"
