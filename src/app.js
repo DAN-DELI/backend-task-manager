@@ -1,8 +1,9 @@
 import express from "express";
 import cors from "cors";
-import tasksRouter from './routes/task.routes.js'
-import usersRouter from './routes/user.routes.js'
-import authRouter from "./routes/auth.routes.js";
+import tasksRouter from './routes/task.Routes.js'
+import usersRouter from './routes/user.Routes.js'
+import authRouter from "./routes/auth.route.js";
+import forgotRouter from "./routes/forgot-password.route.js";
 import { successResponse } from "./utils/response.handler.js";
 import { globalErrorHandler } from "./middlewares/error.middleware.js"
 import roleRouter from "./routes/role.routes.js";
@@ -14,7 +15,9 @@ const app = express();
 /** * Configuración de Middlewares globales 
  */
 // Habilita el intercambio de recursos de origen cruzado (CORS)
-app.use(cors());
+app.use(cors({
+    origin: 'http://localhost:5173'
+}));
 // Middleware para parsear cuerpos de peticiones en formato JSON
 app.use(express.json());
 // Middleware para parsear cuerpos de peticiones codificados en URL (formularios)
@@ -35,6 +38,7 @@ app.get('/', (req, res) => {
 /** * Registro de rutas modulares del sistema 
  */
 app.use("/api/auth", authRouter); // Prefijo para rutas de autenticacion
+app.use("/api/auth", forgotRouter);
 app.use('/tasks', tasksRouter); // Prefijo para rutas de tareas
 app.use('/users', usersRouter); // Prefijo para rutas de usuarios
 
