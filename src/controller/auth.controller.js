@@ -8,6 +8,8 @@ import { catchAsync } from '../utils/catchAsync.js';
 /**
  * Registra un nuevo usuario en el sistema.
  * Valida duplicados por documento, cifra la contraseña y persiste el registro.
+ * Lógica clave: Asigna automáticamente el rol 'Aprendiz' (ID 3) en la tabla pivote
+ * user_roles para garantizar que el usuario tenga permisos RBAC desde su creación.
  * @route POST /api/auth/register
  * @param {Object} req - Objeto de solicitud de Express.
  * @param {Object} req.body - Cuerpo de la petición ya validado por el middleware.
@@ -43,6 +45,15 @@ export const register = catchAsync(async (req, res, next) => {
         password_hash: hashedPassword,
         role: "user",
     });
+
+    // CORRECCIÓN CRÍTICA: Asignar rol RBAC por defecto (Aprendiz = ID 3)
+    // para que el usuario pueda iniciar sesión y el frontend redirija correctamente.
+    try {
+        await UserModel.syncRoles(newUser.id, [3]);
+    } catch (roleErr) {
+        console.error('Error asignando rol por defecto:', roleErr.message);
+        // No fallamos el registro si esto falla, pero loggeamos para debug
+    }
 
     // Paso 5: Separar la contraseña del resto de datos y responder solo con datos públicos
     const { password: _, ...publicUser } = newUser;

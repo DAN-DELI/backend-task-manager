@@ -39,8 +39,8 @@ app.get('/', (req, res) => {
  */
 app.use("/api/auth", authRouter); // Prefijo para rutas de autenticacion
 app.use("/api/auth", forgotRouter);
-app.use('/tasks', tasksRouter); // Prefijo para rutas de tareas
-app.use('/users', usersRouter); // Prefijo para rutas de usuarios
+app.use('/api/tasks', tasksRouter); // Prefijo para rutas de tareas
+app.use('/api/users', usersRouter); // Prefijo para rutas de usuarios
 
 // Rutas RBCA
 app.use('/api/roles', roleRouter); // Prefijo para ruta de roles

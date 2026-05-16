@@ -25,10 +25,13 @@ export const getUsers = catchAsync(async (req, res, next) => {
         }
         result = [user];
     } else if (document) {
+        // CORRECCIÓN CRÍTICA: findByDocument devuelve un objeto único o null,
+        // NO un array. Usar .length sobre null lanza TypeError y crashea el servidor.
         result = await UserModel.findByDocument(document);
-        if (result.length === 0) {
+        if (!result) {
             return next(createError("Usuario no encontrado", 404));
         }
+        result = [result];
     } else {
         result = await UserModel.findAll();
     }
@@ -66,16 +69,16 @@ export const createUser = catchAsync(async (req, res, next) => {
  * Actualización completa de un usuario (Reemplazo).
  * @route PUT /users/:id
  * @param {string} req.params.id - ID del usuario a actualizar.
- * @param {Object} req.body - Debe incluir name, email, document y role.
+ * @param {Object} req.body - Debe incluir name, email, document.
  * @returns {Promise<void>} Responde con el usuario actualizado.
  * @throws {Error} 400 - Si faltan datos o el usuario no existe.
  */
 export const updateUser = catchAsync(async (req, res, next) => {
     const { id } = req.params;
-    const { name, email, document, role } = req.body;
+    const { name, email, document } = req.body;
 
-    if (!name || !email || !document || !role) {
-        return next(createError("Faltan datos obligatorios", 400, ["name, email, document y role son requeridos"]));
+    if (!name || !email || !document) {
+        return next(createError("Faltan datos obligatorios", 400, ["name, email y document son requeridos"]));
     }
 
     const userExists = await UserModel.findById(id);
@@ -83,7 +86,7 @@ export const updateUser = catchAsync(async (req, res, next) => {
         return next(createError("Usuario no encontrado", 400, [`Usuario con id ${id} no encontrado`]));
     }
 
-    const updatedUser = await UserModel.update(id, { name, email, document, role });
+    const updatedUser = await UserModel.update(id, { name, email, document });
 
     return successResponse(res, 200, `Usuario actualizado correctamente`, updatedUser);
 });
