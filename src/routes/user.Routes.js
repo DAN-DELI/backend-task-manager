@@ -77,14 +77,20 @@ usersRouter.patch('/:id/profile', validateSchema(idParamSchema, "params"), updat
  * @desc    Actualización completa de un usuario
  * @access  Privado
  */
-usersRouter.put('/:id', checkPermission("users.update"), validateSchema(userPartialSchema), updateUser);
+usersRouter.patch('/:id/profile', validateSchema(idParamSchema, "params"), updateOwnProfile);
 
 /**
  * @route   PATCH /users/:id
- * @desc    Actualización parcial de un usuario
+ * @desc    Actualizar parcialmente un usuario (admin editando a un usuario)
  * @access  Privado
  */
-usersRouter.patch('/:id', checkPermission("users.update"), validateSchema(userPartialSchema), updateUserPartial);
+usersRouter.patch(
+    '/:id', 
+    checkPermission("users.update"), 
+    validateSchema(idParamSchema, "params"), 
+    validateSchema(userPartialSchema), 
+    updateUserPartial
+);
 
 /**
  * @route   DELETE /users/:id

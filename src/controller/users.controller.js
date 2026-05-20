@@ -1,4 +1,5 @@
 import { UserModel } from '../models/user.model.js';
+import { UserRoleModel } from '../models/user-role.model.js';
 import { PasswordResetModel } from '../models/password-reset.model.js';
 import { createError, successResponse } from '../utils/response.handler.js';
 import { catchAsync } from '../utils/catchAsync.js';
@@ -20,18 +21,33 @@ export const getUsers = catchAsync(async (req, res, next) => {
     let result;
 
     if (id) {
-        const user = await UserModel.findById(id);
+        // Un solo usuario con sus roles
+        const user = await UserModel.findByIdWithRoles(id);
         if (!user) {
             return next(createError("Usuario no encontrado", 404));
         }
         result = [user];
     } else if (document) {
-        result = await UserModel.findByDocument(document);
-        if (result.length === 0) {
+        const users = await UserModel.findByDocument(document);
+        if (!users || users.length === 0) {
             return next(createError("Usuario no encontrado", 404));
         }
+        // Enriquecer con roles
+        result = await Promise.all(
+            (Array.isArray(users) ? users : [users]).map(async (u) => {
+                const roles = await UserModel.getRoles(u.id);
+                return { ...u, roles };
+            })
+        );
     } else {
-        result = await UserModel.findAll();
+        // Todos los usuarios con sus roles
+        const users = await UserModel.findAll();
+        result = await Promise.all(
+            users.map(async (u) => {
+                const roles = await UserModel.getRoles(u.id);
+                return { ...u, roles };
+            })
+        );
     }
 
     return successResponse(res, 200, "Usuarios consultados con éxito", result);
@@ -43,27 +59,39 @@ export const getUsers = catchAsync(async (req, res, next) => {
  * @returns {Promise<void>} Responde con el usuario creado y status 201.
  */
 export const createUser = catchAsync(async (req, res, next) => {
-    const { name, email, document, password } = req.body;
+    const { name, email, document, password, roleIds, roleId } = req.body;
 
-    // Hash de contraseña
-    const salt = await bcrypt.genSalt(10);
-    const password_hash = await bcrypt.hash(password, salt);
+    try {
+        const salt = await bcrypt.genSalt(10);
+        const password_hash = await bcrypt.hash(password, salt);
 
-    // Construcción del objeto limpio
-    const userData = {
-        name,
-        email,
-        document,
-        password_hash
-    };
+        const newUser = await UserModel.create({ name, email, document, password_hash });
+        
+        // ─── Sincronizar roles (soporta múltiples) ───
+        const rolesToAssign = roleIds || (roleId ? [roleId] : []);
+        if (rolesToAssign.length > 0) {
+            await UserModel.syncRoles(newUser.id, rolesToAssign);
+        }
 
-    // Creación en DB
-    const newUser = await UserModel.create(userData);
+        // Enriquecer la respuesta con los roles asignados
+        const userWithRoles = await UserModel.findById(newUser.id);
+        const userRoles = await UserModel.getRoles(newUser.id);
+        
+        const responseData = {
+            ...userWithRoles,
+            roles: userRoles
+        };
 
-    // Registrar la primera contraseña en el historial
-    await PasswordResetModel.saveToHistory(newUser.id, password_hash);
+        await PasswordResetModel.saveToHistory(newUser.id, password_hash);
+        
+        return successResponse(res, 201, "Usuario creado con éxito", responseData);
 
-    return successResponse(res, 201, "Usuario creado con exito", newUser);
+    } catch (error) {
+        if (error.code === 'ER_DUP_ENTRY') {
+            return next(createError("El número de documento ya está registrado", 400));
+        }
+        return next(error);
+    }
 });
 
 /**
@@ -93,45 +121,83 @@ export const updateUser = catchAsync(async (req, res, next) => {
 });
 
 /**
- * Actualización parcial de un usuario (PATCH).
+ * Actualización parcial de un usuario (admin editando).
  * @route PATCH /users/:id
- * @param {string} req.params.id - ID del usuario.
- * @param {Object} req.body - Campos a modificar.
- * @returns {Promise<void>} Responde con un array que contiene al usuario actualizado.
- * @throws {Error} 404 - Si el usuario no existe.
- * @throws {Error} 400 - Si no se envían campos para actualizar.
  */
 export const updateUserPartial = catchAsync(async (req, res, next) => {
     const { id } = req.params;
-    const userData = req.body;
+    const { roleIds, roleId, ...userData } = req.body;
 
     const userExists = await UserModel.findById(id);
     if (!userExists) {
-        return next(createError("Usuario no encontrado", 404, [`No se encontro al usuario con id ${id}`]));
+        return next(createError("Usuario no encontrado", 404));
     }
 
-    if (Object.keys(userData).length === 0) {
+    // ─── Normalizar roles a array ───
+    const rolesToAssign = roleIds || (roleId ? [roleId] : null);
+
+    // 🔒 CANDADO DE SEGURIDAD: Evitar quitar el rol de Admin al último Admin
+    if (rolesToAssign !== null) {
+        const currentRoles = await UserModel.getRoles(id);
+        const hadAdmin = currentRoles.some(r => r.id === 1);
+        const willHaveAdmin = rolesToAssign.includes(1);
+        
+        if (hadAdmin && !willHaveAdmin) {
+            const adminCount = await UserRoleModel.countUsersWithRole(1);
+            if (adminCount <= 1) {
+                return next(createError("Operación denegada: El sistema debe tener al menos un Administrador.", 403));
+            }
+        }
+    }
+
+    if (Object.keys(userData).length === 0 && rolesToAssign === null) {
         return next(createError("Debes enviar al menos un campo para actualizar", 400));
     }
 
-    const updatedUser = await UserModel.updatePartial(id, userData);
+    let updatedUser = userExists;
 
-    return successResponse(res, 200, `Usuario actualizado exitosamente`, [updatedUser]);
+    // Actualizar datos básicos si hay
+    if (Object.keys(userData).length > 0) {
+        updatedUser = await UserModel.updatePartial(id, userData);
+    }
+
+    // ─── Sincronizar roles si se enviaron ───
+    if (rolesToAssign !== null) {
+        await UserModel.syncRoles(id, rolesToAssign);
+    }
+
+    // Enriquecer respuesta con roles actualizados
+    const finalUser = await UserModel.findById(id);
+    const finalRoles = await UserModel.getRoles(id);
+    
+    const responseData = {
+        ...finalUser,
+        roles: finalRoles
+    };
+
+    return successResponse(res, 200, "Usuario actualizado exitosamente", [responseData]);
 });
 
-/**
- * Elimina de forma definitiva a un usuario.
- * @route DELETE /users/:id
- * @param {string} req.params.id - ID del usuario a eliminar.
- * @returns {Promise<void>} Responde con mensaje de éxito.
- * @throws {Error} 404 - Si el ID no corresponde a ningún usuario.
- */
 export const deleteUser = catchAsync(async (req, res, next) => {
     const { id } = req.params;
 
+    // Primero buscamos al usuario para saber qué rol tiene
+    const userExists = await UserModel.findById(id);
+    if (!userExists) {
+        return next(createError("Usuario no encontrado", 404));
+    }
+
+    // 🔒 CANDADO DE SEGURIDAD: Evitar borrar al último Admin
+    if (userExists.roleId === 1) {
+        const adminCount = await UserRoleModel.countUsersWithRole(1);
+        if (adminCount <= 1) {
+            return next(createError("Operación denegada: No puedes eliminar al último Administrador del sistema.", 403));
+        }
+    }
+
     const isDeleted = await UserModel.delete(id);
     if (!isDeleted) {
-        return next(createError("No se pudo eliminar el usuario", 404, [`Usuario con id ${id} no encontrado`]));
+        return next(createError("No se pudo eliminar el usuario", 400));
     }
 
     return successResponse(res, 200, `Usuario eliminado correctamente`);
@@ -196,7 +262,10 @@ export const getUserRolesWithPermissions = catchAsync(async (req, res, next) => 
     // Lógica clave: Obtener estructura anidada de roles con permisos asociados
     const rolesWithPermissions = await UserModel.getRolesWithPermissions(id);
     return successResponse(res, 200, "Roles y permisos del usuario obtenidos con éxito", rolesWithPermissions);
+
 });
+
+
 
 /**
  * Cambia la contraseña de un usuario autenticado desde settings.
