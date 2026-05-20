@@ -50,3 +50,38 @@ export const userPartialSchema = userSchema
         (data) => Object.keys(data).length > 0,
         { message: "Debe enviar al menos un campo para actualizar" }
     );
+
+/**
+ * Esquema para cambio de contraseña desde settings (usuario autenticado).
+ * Requiere la contraseña actual para verificar identidad y la nueva dos veces.
+ * @const {z.ZodEffects}
+ */
+export const changePasswordSchema = z.object({
+
+    /** Contraseña actual del usuario para verificar identidad */
+    currentPassword: z.string({
+        required_error: "La contraseña actual es obligatoria",
+        invalid_type_error: "La contraseña actual debe ser una cadena de texto",
+    }).min(1, "La contraseña actual es obligatoria"),
+
+    /** Nueva contraseña: entre 8 y 120 caracteres */
+    newPassword: z.string({
+        required_error: "La nueva contraseña es obligatoria",
+        invalid_type_error: "La nueva contraseña debe ser una cadena de texto",
+    })
+        .min(8, "La nueva contraseña debe tener al menos 8 caracteres")
+        .max(120, "La nueva contraseña no puede exceder los 120 caracteres"),
+
+    /** Confirmación de la nueva contraseña */
+    confirmPassword: z.string({
+        required_error: "La confirmación de contraseña es obligatoria",
+        invalid_type_error: "La confirmación debe ser una cadena de texto",
+    }).min(1, "La confirmación de contraseña es obligatoria"),
+
+}).refine(
+    (data) => data.newPassword === data.confirmPassword,
+    {
+        message: "Las contraseñas nuevas no coinciden",
+        path: ["confirmPassword"],
+    }
+);
