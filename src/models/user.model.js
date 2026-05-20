@@ -6,23 +6,31 @@ import pool from '../config/db.js';
  */
 export const UserModel = {
 
-    /**
-     * Obtiene todos los usuarios registrados sin filtros.
+/**
+     * Obtiene todos los usuarios registrados sin filtros, incluyendo su rol.
      * @returns {Promise<Array>} Lista de usuarios.
      */
     findAll: async () => {
-        const [rows] = await pool.query("SELECT * FROM users");
+        const [rows] = await pool.query(`
+            SELECT u.*, ur.role_id as roleId 
+            FROM users u
+            LEFT JOIN user_roles ur ON u.id = ur.user_id
+            ORDER BY u.id DESC
+        `);
         return rows;
     },
 
     /**
-     * Busca un usuario por su ID e inicializa su lista de tareas.
+     * Busca un usuario por su ID, incluyendo su rol.
      * @param {number|string} id - ID único del usuario.
-     * @returns {Promise<Object|null>} Usuario con propiedad 'tasks' vacía o null.
+     * @returns {Promise<Object|null>} Usuario con su roleId o null.
      */
     findById: async (id) => {
         const [rows] = await pool.query(
-            "SELECT * FROM users WHERE id = ?",
+            `SELECT u.*, ur.role_id as roleId 
+            FROM users u
+            LEFT JOIN user_roles ur ON u.id = ur.user_id
+            WHERE u.id = ?`,
             [id]
         );
 
