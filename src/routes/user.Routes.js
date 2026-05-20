@@ -73,6 +73,13 @@ usersRouter.post('/:id/change-password', validateSchema(idParamSchema, "params")
 usersRouter.patch('/:id/profile', validateSchema(idParamSchema, "params"), updateOwnProfile);
 
 /**
+ * @route   PUT /users/:id
+ * @desc    Actualización completa de un usuario
+ * @access  Privado
+ */
+usersRouter.patch('/:id/profile', validateSchema(idParamSchema, "params"), updateOwnProfile);
+
+/**
  * @route   PATCH /users/:id
  * @desc    Actualizar parcialmente un usuario (admin editando a un usuario)
  * @access  Privado
