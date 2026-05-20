@@ -1,8 +1,8 @@
 import express from 'express';
 import { verifyToken } from "../middlewares/auth.middleware.js" // Validador de token
-import { getUsers, createUser, updateUser, updateUserPartial, deleteUser, getUserRoles, getUserPermissions, getUserRolesWithPermissions } from '../controller/users.controller.js';
+import { getUsers, createUser, updateUser, updateUserPartial, updateOwnProfile, deleteUser, getUserRoles, getUserPermissions, getUserRolesWithPermissions, changePassword } from '../controller/users.controller.js';
 import { validateSchema } from '../middlewares/validator.middleware.js';
-import { userSchema, userPartialSchema } from '../schemas/user.schema.js';
+import { userSchema, userPartialSchema, changePasswordSchema } from '../schemas/user.schema.js';
 import { checkPermission } from '../middlewares/permissions.middleware.js';
 import { idParamSchema } from '../schemas/role.schema.js';
 
@@ -57,6 +57,20 @@ usersRouter.get("/:id/roles-with-permissions", checkPermission("roles.view"), va
  * @access  Privado
  */
 usersRouter.post('/', checkPermission("users.create"), validateSchema(userSchema), createUser);
+
+/**
+ * @route   POST /users/:id/change-password
+ * @desc    Cambiar contraseña del usuario autenticado desde settings
+ * @access  Privado (solo el propio usuario)
+ */
+usersRouter.post('/:id/change-password', validateSchema(idParamSchema, "params"), validateSchema(changePasswordSchema), changePassword);
+
+/**
+ * @route   PATCH /users/:id/profile
+ * @desc    Actualización del propio perfil (nombre y/o email) sin permisos de admin
+ * @access  Privado (solo el propio usuario)
+ */
+usersRouter.patch('/:id/profile', validateSchema(idParamSchema, "params"), updateOwnProfile);
 
 /**
  * @route   PUT /users/:id

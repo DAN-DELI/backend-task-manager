@@ -197,3 +197,94 @@ export const getUserRolesWithPermissions = catchAsync(async (req, res, next) => 
     const rolesWithPermissions = await UserModel.getRolesWithPermissions(id);
     return successResponse(res, 200, "Roles y permisos del usuario obtenidos con éxito", rolesWithPermissions);
 });
+
+/**
+ * Cambia la contraseña de un usuario autenticado desde settings.
+ * Verifica la contraseña actual, valida que la nueva no esté en el historial
+ * y actualiza el hash en la base de datos.
+ * @route POST /api/users/:id/change-password
+ * @param {string} req.params.id       - ID del usuario.
+ * @param {string} req.body.currentPassword - Contraseña actual para verificar identidad.
+ * @param {string} req.body.newPassword     - Nueva contraseña a establecer.
+ * @returns {Promise<void>} Responde con mensaje de éxito o error.
+ */
+export const changePassword = catchAsync(async (req, res, next) => {
+    const { id } = req.params;
+    const { currentPassword, newPassword } = req.body;
+
+    // Paso 1: Verificar que el usuario existe
+    const user = await UserModel.findById(id);
+    if (!user) {
+        return next(createError("Usuario no encontrado", 404));
+    }
+
+    // Paso 2: Obtener el hash actual y verificar la contraseña actual
+    const currentHash = await PasswordResetModel.getCurrentPasswordHash(id);
+    const isCurrentValid = await bcrypt.compare(currentPassword, currentHash);
+    if (!isCurrentValid) {
+        return next(createError("La contraseña actual es incorrecta", 400, [
+            { field: "currentPassword", message: "La contraseña actual no coincide con la registrada" }
+        ]));
+    }
+
+    // Paso 3: Verificar que la nueva contraseña no sea igual a la actual
+    const isSameAsCurrent = await bcrypt.compare(newPassword, currentHash);
+    if (isSameAsCurrent) {
+        return next(createError("La nueva contraseña no puede ser igual a la actual", 400, [
+            { field: "newPassword", message: "Elige una contraseña diferente a la actual" }
+        ]));
+    }
+
+    // Paso 4: Verificar que la nueva contraseña no esté en el historial
+    const history = await PasswordResetModel.getPasswordHistory(id);
+    for (const entry of history) {
+        const isInHistory = await bcrypt.compare(newPassword, entry.password_hash);
+        if (isInHistory) {
+            return next(createError("Contraseña ya utilizada anteriormente", 400, [
+                { field: "newPassword", message: "No puedes reutilizar una contraseña reciente" }
+            ]));
+        }
+    }
+
+    // Paso 5: Guardar la contraseña actual en el historial antes de reemplazarla
+    await PasswordResetModel.saveToHistory(id, currentHash);
+
+    // Paso 6: Hashear la nueva contraseña y actualizarla
+    const salt = await bcrypt.genSalt(10);
+    const newHash = await bcrypt.hash(newPassword, salt);
+    await PasswordResetModel.updatePassword(id, newHash);
+
+    // Paso 7: Limpiar el historial para no acumular entradas infinitas
+    await PasswordResetModel.pruneHistory(id);
+
+    return successResponse(res, 200, "Contraseña actualizada exitosamente");
+});
+
+/**
+ * Permite a un usuario autenticado actualizar su propio nombre y/o email.
+ * No requiere permiso administrativo — solo valida que el id del token
+ * coincida con el id del parámetro de ruta.
+ * @route PATCH /users/:id/profile
+ */
+export const updateOwnProfile = catchAsync(async (req, res, next) => {
+    const { id } = req.params;
+
+    // Solo el propio usuario puede editar su perfil
+    if (String(req.user.id) !== String(id)) {
+        return next(createError("No puedes editar el perfil de otro usuario", 403));
+    }
+
+    const { name, email } = req.body;
+
+    if (!name && !email) {
+        return next(createError("Debes enviar al menos un campo para actualizar", 400));
+    }
+
+    const userData = {};
+    if (name)  userData.name  = name;
+    if (email) userData.email = email;
+
+    const updatedUser = await UserModel.updatePartial(id, userData);
+
+    return successResponse(res, 200, "Perfil actualizado exitosamente", [updatedUser]);
+});
