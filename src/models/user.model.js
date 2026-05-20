@@ -6,37 +6,45 @@ import pool from '../config/db.js';
  */
 export const UserModel = {
 
-/**
-     * Obtiene todos los usuarios registrados sin filtros, incluyendo su rol.
-     * @returns {Promise<Array>} Lista de usuarios.
+    /**
+     * Obtiene todos los usuarios registrados sin filtros.
+     * @returns {Promise<Array>} Lista de usuarios (sin roles, para evitar duplicados).
      */
     findAll: async () => {
         const [rows] = await pool.query(`
-            SELECT u.*, ur.role_id as roleId 
+            SELECT u.* 
             FROM users u
-            LEFT JOIN user_roles ur ON u.id = ur.user_id
             ORDER BY u.id DESC
         `);
         return rows;
     },
 
     /**
-     * Busca un usuario por su ID, incluyendo su rol.
+     * Busca un usuario por su ID (solo datos básicos, sin roles).
      * @param {number|string} id - ID único del usuario.
-     * @returns {Promise<Object|null>} Usuario con su roleId o null.
+     * @returns {Promise<Object|null>} Usuario o null.
      */
     findById: async (id) => {
         const [rows] = await pool.query(
-            `SELECT u.*, ur.role_id as roleId 
+            `SELECT u.* 
             FROM users u
-            LEFT JOIN user_roles ur ON u.id = ur.user_id
             WHERE u.id = ?`,
             [id]
         );
+        return rows[0] || null;
+    },
 
-        if (!rows[0]) return null;
-
-        return rows[0];
+    /**
+     * Busca un usuario por su ID incluyendo sus roles.
+     * @param {number|string} id - ID único del usuario.
+     * @returns {Promise<Object|null>} Usuario con array `roles` o null.
+     */
+    findByIdWithRoles: async (id) => {
+        const user = await UserModel.findById(id);
+        if (!user) return null;
+        
+        const roles = await UserModel.getRoles(id);
+        return { ...user, roles };
     },
     /**
      * Busca usuarios por su número de documento.

@@ -21,18 +21,33 @@ export const getUsers = catchAsync(async (req, res, next) => {
     let result;
 
     if (id) {
-        const user = await UserModel.findById(id);
+        // Un solo usuario con sus roles
+        const user = await UserModel.findByIdWithRoles(id);
         if (!user) {
             return next(createError("Usuario no encontrado", 404));
         }
         result = [user];
     } else if (document) {
-        result = await UserModel.findByDocument(document);
-        if (result.length === 0) {
+        const users = await UserModel.findByDocument(document);
+        if (!users || users.length === 0) {
             return next(createError("Usuario no encontrado", 404));
         }
+        // Enriquecer con roles
+        result = await Promise.all(
+            (Array.isArray(users) ? users : [users]).map(async (u) => {
+                const roles = await UserModel.getRoles(u.id);
+                return { ...u, roles };
+            })
+        );
     } else {
-        result = await UserModel.findAll();
+        // Todos los usuarios con sus roles
+        const users = await UserModel.findAll();
+        result = await Promise.all(
+            users.map(async (u) => {
+                const roles = await UserModel.getRoles(u.id);
+                return { ...u, roles };
+            })
+        );
     }
 
     return successResponse(res, 200, "Usuarios consultados con éxito", result);
@@ -44,7 +59,7 @@ export const getUsers = catchAsync(async (req, res, next) => {
  * @returns {Promise<void>} Responde con el usuario creado y status 201.
  */
 export const createUser = catchAsync(async (req, res, next) => {
-    const { name, email, document, password, roleId } = req.body;
+    const { name, email, document, password, roleIds, roleId } = req.body;
 
     try {
         const salt = await bcrypt.genSalt(10);
@@ -52,21 +67,29 @@ export const createUser = catchAsync(async (req, res, next) => {
 
         const newUser = await UserModel.create({ name, email, document, password_hash });
         
-        if (roleId) {
-            await UserRoleModel.assignRole(newUser.id, roleId);
+        // ─── Sincronizar roles (soporta múltiples) ───
+        const rolesToAssign = roleIds || (roleId ? [roleId] : []);
+        if (rolesToAssign.length > 0) {
+            await UserModel.syncRoles(newUser.id, rolesToAssign);
         }
+
+        // Enriquecer la respuesta con los roles asignados
+        const userWithRoles = await UserModel.findById(newUser.id);
+        const userRoles = await UserModel.getRoles(newUser.id);
+        
+        const responseData = {
+            ...userWithRoles,
+            roles: userRoles
+        };
 
         await PasswordResetModel.saveToHistory(newUser.id, password_hash);
         
-        return successResponse(res, 201, "Usuario creado con éxito", newUser);
+        return successResponse(res, 201, "Usuario creado con éxito", responseData);
 
     } catch (error) {
-        // Capturamos el error específico de duplicado de MySQL
         if (error.code === 'ER_DUP_ENTRY') {
             return next(createError("El número de documento ya está registrado", 400));
         }
-        
-        // Si es cualquier otro error, lo pasamos al middleware global
         return next(error);
     }
 });
@@ -97,42 +120,62 @@ export const updateUser = catchAsync(async (req, res, next) => {
     return successResponse(res, 200, `Usuario actualizado correctamente`, updatedUser);
 });
 
+/**
+ * Actualización parcial de un usuario (admin editando).
+ * @route PATCH /users/:id
+ */
 export const updateUserPartial = catchAsync(async (req, res, next) => {
     const { id } = req.params;
-    const { roleId, ...userData } = req.body;
+    const { roleIds, roleId, ...userData } = req.body;
 
     const userExists = await UserModel.findById(id);
     if (!userExists) {
         return next(createError("Usuario no encontrado", 404));
     }
 
-    // 🔒 CANDADO DE SEGURIDAD: Evitar quitar el rol al último Admin
-    // Si el usuario actual es Admin (1) y le están enviando un rol distinto (!= 1)
-    if (roleId && userExists.roleId === 1 && Number(roleId) !== 1) {
-        const adminCount = await UserRoleModel.countUsersWithRole(1);
-        if (adminCount <= 1) {
-            return next(createError("Operación denegada: El sistema debe tener al menos un Administrador.", 403));
+    // ─── Normalizar roles a array ───
+    const rolesToAssign = roleIds || (roleId ? [roleId] : null);
+
+    // 🔒 CANDADO DE SEGURIDAD: Evitar quitar el rol de Admin al último Admin
+    if (rolesToAssign !== null) {
+        const currentRoles = await UserModel.getRoles(id);
+        const hadAdmin = currentRoles.some(r => r.id === 1);
+        const willHaveAdmin = rolesToAssign.includes(1);
+        
+        if (hadAdmin && !willHaveAdmin) {
+            const adminCount = await UserRoleModel.countUsersWithRole(1);
+            if (adminCount <= 1) {
+                return next(createError("Operación denegada: El sistema debe tener al menos un Administrador.", 403));
+            }
         }
     }
 
-    if (Object.keys(userData).length === 0 && !roleId) {
+    if (Object.keys(userData).length === 0 && rolesToAssign === null) {
         return next(createError("Debes enviar al menos un campo para actualizar", 400));
     }
 
     let updatedUser = userExists;
 
+    // Actualizar datos básicos si hay
     if (Object.keys(userData).length > 0) {
         updatedUser = await UserModel.updatePartial(id, userData);
     }
 
-    if (roleId) {
-        const roleResult = await UserRoleModel.updateUserRole(id, roleId);
-        if (roleResult.affectedRows === 0) {
-            await UserRoleModel.assignRole(id, roleId);
-        }
+    // ─── Sincronizar roles si se enviaron ───
+    if (rolesToAssign !== null) {
+        await UserModel.syncRoles(id, rolesToAssign);
     }
 
-    return successResponse(res, 200, `Usuario actualizado exitosamente`, [updatedUser]);
+    // Enriquecer respuesta con roles actualizados
+    const finalUser = await UserModel.findById(id);
+    const finalRoles = await UserModel.getRoles(id);
+    
+    const responseData = {
+        ...finalUser,
+        roles: finalRoles
+    };
+
+    return successResponse(res, 200, "Usuario actualizado exitosamente", [responseData]);
 });
 
 export const deleteUser = catchAsync(async (req, res, next) => {
