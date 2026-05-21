@@ -2,10 +2,10 @@
   "name": "backend-rutas",
   "version": "1.0.0",
   "description": "Backend Rutas es una API REST desarrollada con Express.js que proporciona funcionalidades para la gestión de tareas y usuarios. El servidor está diseñado para servir como backend para aplicaciones frontend, permitiendo operaciones CRUD en recursos de tareas y usuarios.",
-  "main": "src/app.js",
+  "main": "server.js",
   "type": "module",
   "scripts": {
-    "dev": "nodemon src/app.js",
+    "dev": "nodemon server.js",
     "dev:frontend": "vite",
     "build": "vite build",
     "preview": "vite preview"
