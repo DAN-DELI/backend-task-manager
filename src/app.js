@@ -16,8 +16,12 @@ const app = express();
  */
 // Habilita el intercambio de recursos de origen cruzado (CORS)
 app.use(cors({
-    origin: 'http://localhost:5173'
+    origin: `*`,
+    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+    optionsSuccessStatus: 204,
 }));
+
 // Middleware para parsear cuerpos de peticiones en formato JSON
 app.use(express.json());
 // Middleware para parsear cuerpos de peticiones codificados en URL (formularios)
@@ -53,9 +57,5 @@ app.use('/api/userRoles', userRolesRouter); // Prefijo para ruta de asignacion d
  */
 app.use(globalErrorHandler);
 
-/**
- * Inicia el servidor y lo pone a la escucha de peticiones.
- */
-app.listen(port, () => {
-    console.log(`example app listening on port ${port}`);
-})
+
+export default app;

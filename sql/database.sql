@@ -9,7 +9,9 @@ CREATE USER IF NOT EXISTS 'app_user_3233198'@'localhost' IDENTIFIED BY '#ADSO_32
 CREATE DATABASE IF NOT EXISTS inventario_task_manager;
 
 -- Permisos
-GRANT ALL PRIVILEGES ON inventario_task_manager.* TO 'app_user_3233198'@'localhost';
+GRANT ALL PRIVILEGES ON inventario_task_manager.* TO 'app_user_3233198'@'localhost'; -- Usuario local
+
+GRANT ALL PRIVILEGES ON inventario_task_manager.* TO 'app_user_3233198'@'%'; -- Usuario remoto
 
 FLUSH PRIVILEGES;
 
