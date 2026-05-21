@@ -54,13 +54,13 @@ export const forgotPassword = catchAsync(async (req, res, next) => {
     await PasswordResetModel.invalidatePreviousTokens(user.id);
     await PasswordResetModel.saveToken(user.id, token, expiresAt);
 
-    const resetLink = `${process.env.FRONTEND_URL}/#/reset-password?token=${token}`;
+    const resetLink = `${process.env.FRONTEND_URL}/#/reset-password/${token}`;
 
     await transporter.sendMail({
-        from:    `"Task Manager" <${process.env.MAIL_FROM}>`,
-        to:      user.email,
+        from: `"Task Manager" <${process.env.MAIL_FROM}>`,
+        to: user.email,
         subject: 'Recuperación de contraseña',
-        html:    resetPasswordEmail(user.name, resetLink),
+        html: resetPasswordEmail(user.name, resetLink),
     });
 
     return successResponse(res, 200, msg);
@@ -95,30 +95,13 @@ export const resetPassword = catchAsync(async (req, res, next) => {
         return next(createError('El enlace ha expirado o ya fue utilizado. Solicita uno nuevo.', 400));
     }
 
-    // Lógica clave: Comparar la nueva contraseña contra la actual y el historial previo
-    const currentHash = await PasswordResetModel.getCurrentPasswordHash(record.user_id);
-    const history     = await PasswordResetModel.getPasswordHistory(record.user_id);
-
-    const hashesToCheck = [
-        ...(currentHash ? [{ password_hash: currentHash }] : []),
-        ...history,
-    ];
-
-    for (const entry of hashesToCheck) {
-        const isReused = await bcrypt.compare(newPassword, entry.password_hash);
-        if (isReused) {
-            return next(createError('Por favor elige una contraseña diferente.', 400));
-        }
-    }
-
     const salt = await bcrypt.genSalt(10);
     const hash = await bcrypt.hash(newPassword, salt);
 
     // Lógica clave: Guardar la contraseña actual en historial antes de reemplazarla
-    if (currentHash) {
-        await PasswordResetModel.saveToHistory(record.user_id, currentHash);
-        await PasswordResetModel.pruneHistory(record.user_id);
-    }
+    await PasswordResetModel.saveToHistory(record.user_id, hash);
+    await PasswordResetModel.pruneHistory(record.user_id);
+
 
     await PasswordResetModel.updatePassword(record.user_id, hash);
     await PasswordResetModel.markTokenAsUsed(record.id);
