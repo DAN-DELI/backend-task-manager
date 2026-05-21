@@ -3,7 +3,7 @@ import cors from "cors";
 import tasksRouter from './routes/task.routes.js'
 import usersRouter from './routes/user.routes.js'
 import authRouter from "./routes/auth.routes.js";
-import forgotRouter from "./routes/forgot-password.route.js";
+import forgotRouter from "./routes/forgot-password.routes.js";
 import { successResponse } from "./utils/response.handler.js";
 import { globalErrorHandler } from "./middlewares/error.middleware.js"
 import roleRouter from "./routes/role.routes.js";
