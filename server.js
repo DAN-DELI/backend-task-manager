@@ -12,13 +12,12 @@ const showBanner = () => {
 
     console.log(`
 
-    ${yellow}◆${reset}  Backend activo y escuchando peticiones
     ${yellow}◆${reset}  Modo: ${process.env.NODE_ENV || 'development'}
     ${yellow}◆${reset}  Iniciado: ${new Date().toLocaleString('es-CO')}
 
     ${dim}┌─────────────────────────────┬─────────────────────────────────────┐${reset}
     ${dim}│${reset}  ${cyan}FRONTEND${reset}                  ${dim}│${reset}  ${green}${process.env.FRONTEND_URL || 'No definido'}${reset}
-    ${dim}│${reset}  ${cyan}BACKEND${reset}                   ${dim}│${reset}  ${green}${DB_HOST}:${PORT}${reset}
+    ${dim}│${reset}  ${cyan}BACKEND${reset}                   ${dim}│${reset}  ${green}${DB_HOST}:${PORT || 'No definido'} ${reset}
     ${dim}│${reset}  ${cyan}DATABASE${reset}                  ${dim}│${reset}  ${green}${process.env.DB_NAME || 'No definido'}${reset}
     ${dim}└─────────────────────────────┴─────────────────────────────────────┘${reset}
     `);
