@@ -15,10 +15,10 @@ permissionsRouter.use(verifyToken);
 
 /**
  * @route   GET /api/permissions
- * @desc    Listar todos los roles disponibles del sistema
- * @access  Privado
+ * @desc    Listar todos los permisos del sistema
+ * @access  Privado - Autenticacion
  */
-permissionsRouter.get("/", checkPermission("roles.view"), getAllPermissions);
+permissionsRouter.get("/", getAllPermissions);
 
 
 export default permissionsRouter;
