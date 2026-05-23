@@ -129,7 +129,8 @@ CREATE TABLE user_roles (
         ON DELETE CASCADE,
     CONSTRAINT fk_ur_role 
         FOREIGN KEY (role_id) REFERENCES roles(id) 
-        ON DELETE CASCADE
+        ON DELETE RESTRICT
+        ON UPDATE CASCADE
 );
 
 -- ------------------------------------------
