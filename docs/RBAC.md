@@ -56,7 +56,7 @@ Sistema de control de acceso basado en roles (RBAC) implementado en el proyecto 
 
 | Permiso | Acción | Descripción |
 |:--|:--|:--|
-| `tasks.view` | `GET /api/tasks` | Listar tareas filtradas por usuario desde el controlador |
+| `tasks.view.own` | `GET /api/tasks/my-tasks` | Listar únicamente las tareas asignadas al usuario autenticado |
 | `tasks.update` | `PUT /api/tasks/:id` | Actualizar únicamente tareas propias |
 
 ---
@@ -81,6 +81,7 @@ Sistema de control de acceso basado en roles (RBAC) implementado en el proyecto 
 | `roles.assign` | Asignar Permisos a Roles | Sincronizar permisos de un rol |
 | `permissions.view` | Ver Permisos | Consultar permisos atómicos |
 | `user-roles.assign` | Asignar Roles a Usuarios | Sincronizar roles de un usuario |
+| `tasks.view.own` | Ver Tareas propias | Consultar listado y detalle de tareas asignadas al usuario |
 
 ---
 <br>
