@@ -23,12 +23,22 @@ export const register = catchAsync(async (req, res, next) => {
     // Paso 1: Extraer los datos del cuerpo (ya validados por el middleware)
     const { name, email, document, password } = req.body;
 
+    const errors = [];
+
     // Paso 2: Verificar que el documento no esté registrado previamente
     const existingUser = await UserModel.findByDocument(document);
     if (existingUser) {
-        return next(createError("El usuario ya se encuentra registrado", 400, [
-            { field: "document", message: "Ya existe un usuario registrado con este documento" }
-        ]));
+    errors.push({ field: "document", message: "Ya existe un usuario registrado con este documento" });
+    }
+
+    // Paso 2.1: Verificar que el correo no esté registrado previamente
+    const existingEmail = await UserModel.findByEmail(email);
+    if (existingEmail) {
+    errors.push({ field: "email", message: "Ya existe un usuario registrado con este correo" });
+    }
+
+    if (errors.length > 0) {
+    return next(createError("El usuario ya se encuentra registrado", 400, errors));
     }
 
     // Paso 3: Cifrar la contraseña antes de persistirla

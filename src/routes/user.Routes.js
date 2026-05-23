@@ -5,6 +5,7 @@ import { validateSchema } from '../middlewares/validator.middleware.js';
 import { userSchema, userPartialSchema, changePasswordSchema } from '../schemas/user.schema.js';
 import { checkPermission } from '../middlewares/permissions.middleware.js';
 import { idParamSchema } from '../schemas/role.schema.js';
+import { profileUpdateLimiter } from '../middlewares/rateLimit.middleware.js';
 
 /**
  * Enrutador de Usuarios (Users).
@@ -63,21 +64,21 @@ usersRouter.post('/', checkPermission("users.create"), validateSchema(userSchema
  * @desc    Cambiar contraseña del usuario autenticado desde settings
  * @access  Privado (solo el propio usuario)
  */
-usersRouter.post('/:id/change-password', validateSchema(idParamSchema, "params"), validateSchema(changePasswordSchema), changePassword);
+usersRouter.post('/:id/change-password', profileUpdateLimiter,validateSchema(idParamSchema, "params"), validateSchema(changePasswordSchema), changePassword);
 
 /**
  * @route   PATCH /users/:id/profile
  * @desc    Actualización del propio perfil (nombre y/o email) sin permisos de admin
  * @access  Privado (solo el propio usuario)
  */
-usersRouter.patch('/:id/profile', validateSchema(idParamSchema, "params"), updateOwnProfile);
+usersRouter.patch('/:id/profile', profileUpdateLimiter,validateSchema(idParamSchema, "params"), updateOwnProfile);
 
 /**
  * @route   PUT /users/:id
  * @desc    Actualización completa de un usuario
  * @access  Privado
  */
-usersRouter.patch('/:id/profile', validateSchema(idParamSchema, "params"), updateOwnProfile);
+usersRouter.put('/:id/profile', profileUpdateLimiter,validateSchema(idParamSchema, "params"), updateOwnProfile);
 
 /**
  * @route   PATCH /users/:id
