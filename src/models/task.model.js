@@ -216,10 +216,10 @@ export const TaskModel = {
             // Actualizar campos básicos si vienen
             const fields = [];
             const values = [];
-            if (taskData.created_by  !== undefined) { fields.push('created_by = ?');  values.push(taskData.created_by); }
-            if (taskData.title       !== undefined) { fields.push('title = ?');        values.push(taskData.title); }
-            if (taskData.description !== undefined) { fields.push('description = ?');  values.push(taskData.description); }
-            if (taskData.status      !== undefined) { fields.push('status = ?');       values.push(taskData.status); }
+            if (taskData.created_by !== undefined) { fields.push('created_by = ?'); values.push(taskData.created_by); }
+            if (taskData.title !== undefined) { fields.push('title = ?'); values.push(taskData.title); }
+            if (taskData.description !== undefined) { fields.push('description = ?'); values.push(taskData.description); }
+            if (taskData.status !== undefined) { fields.push('status = ?'); values.push(taskData.status); }
 
             if (fields.length > 0) {
                 values.push(id);
@@ -250,6 +250,54 @@ export const TaskModel = {
         } finally {
             conn.release();
         }
+    },
+
+    /**
+     * Devuelve las tareas asignadas a un usuario específico.
+     * @param {number} userId - ID del usuario
+     */
+    findByUserId: async (userId) => {
+        // 1. Obtener tareas donde el usuario está asignado
+        const [tasks] = await pool.query(`
+            SELECT  t.*,
+                    u.document AS created_by_document,
+                    u.name     AS created_by_name
+            FROM    tasks t
+            INNER JOIN task_assignments ta ON t.id = ta.task_id
+            LEFT JOIN users u ON t.created_by = u.id
+            WHERE   ta.user_id = ?
+            ORDER BY t.id DESC
+        `, [userId]);
+
+        if (tasks.length === 0) return [];
+
+        // 2. Obtener asignados de todas las tareas en una sola consulta
+        const taskIds = tasks.map(t => t.id);
+        const [assignments] = await pool.query(`
+            SELECT  ta.task_id,
+                    u.id       AS user_id,
+                    u.name     AS user_name,
+                    u.document AS user_document
+            FROM    task_assignments ta
+            INNER JOIN users u ON ta.user_id = u.id
+            WHERE   ta.task_id IN (?)
+        `, [taskIds]);
+
+        // 3. Agrupar asignados por tarea
+        const assignedMap = {};
+        for (const a of assignments) {
+            if (!assignedMap[a.task_id]) assignedMap[a.task_id] = [];
+            assignedMap[a.task_id].push({
+                id: a.user_id,
+                name: a.user_name,
+                document: a.user_document
+            });
+        }
+
+        return tasks.map(t => ({
+            ...t,
+            assigned_users: assignedMap[t.id] ?? []
+        }));
     },
 
     delete: async (id) => {
