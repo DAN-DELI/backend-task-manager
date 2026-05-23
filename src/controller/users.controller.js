@@ -87,12 +87,21 @@ export const createUser = catchAsync(async (req, res, next) => {
         return successResponse(res, 201, "Usuario creado con éxito", responseData);
 
     } catch (error) {
-        if (error.code === 'ER_DUP_ENTRY') {
-            return next(createError("El número de documento ya está registrado", 400));
+    if (error.code === 'ER_DUP_ENTRY') {
+            if (error.message.includes('document')) {
+                return next(createError("Este documento ya está registrado por otro usuario", 400, [
+                    { field: 'document', message: 'Este documento ya está registrado por otro usuario' }
+                ]));
+            }
+            if (error.message.includes('email')) {
+                return next(createError("Este correo electrónico ya está en uso", 400, [
+                    { field: 'email', message: 'Este correo electrónico ya está en uso' }
+                ]));
+            }
         }
-        return next(error);
-    }
-});
+    return next(error);
+}});
+
 
 /**
  * Actualización completa de un usuario (Reemplazo).
@@ -330,7 +339,7 @@ export const changePassword = catchAsync(async (req, res, next) => {
 });
 
 /**
- * Permite a un usuario autenticado actualizar su propio nombre y/o email.
+ * Permite a un usuario autenticado actualizar su propio nombre,email y/o documento.
  * No requiere permiso administrativo — solo valida que el id del token
  * coincida con el id del parámetro de ruta.
  * @route PATCH /users/:id/profile
@@ -343,17 +352,41 @@ export const updateOwnProfile = catchAsync(async (req, res, next) => {
         return next(createError("No puedes editar el perfil de otro usuario", 403));
     }
 
-    const { name, email } = req.body;
+    const { name, email, document } = req.body;
 
-    if (!name && !email) {
+    if (!name && !email && !document) {
         return next(createError("Debes enviar al menos un campo para actualizar", 400));
     }
 
     const userData = {};
-    if (name)  userData.name  = name;
-    if (email) userData.email = email;
+    if (name)     userData.name     = name;
+    if (email)    userData.email    = email;
+    if (document) userData.document = document;
 
-    const updatedUser = await UserModel.updatePartial(id, userData);
+    const errors = [];
 
-    return successResponse(res, 200, "Perfil actualizado exitosamente", [updatedUser]);
+    if (userData.email) {
+        const emailExists = await UserModel.findByEmail(userData.email);
+        if (emailExists && String(emailExists.id) !== String(id)) {
+            errors.push({ field: 'email', message: 'Este correo electrónico ya está en uso' });
+        }
+    }
+
+    if (userData.document) {
+        const docExists = await UserModel.findByDocument(userData.document);
+        if (docExists && String(docExists.id) !== String(id)) {
+            errors.push({ field: 'document', message: 'Este documento ya está registrado por otro usuario' });
+        }
+    }
+
+    if (errors.length > 0) {
+        return next(createError("Algunos datos ya están en uso", 400, errors));
+    }
+
+    try {
+        const updatedUser = await UserModel.updatePartial(id, userData);
+        return successResponse(res, 200, "Perfil actualizado exitosamente", [updatedUser]);
+    } catch (err) {
+        return next(err);
+    }
 });
