@@ -53,6 +53,47 @@ export const TaskModel = {
         }));
     },
 
+    findByUserId: async (userId) => {
+    const [tasks] = await pool.query(`
+        SELECT  t.*,
+                u.document AS created_by_document,
+                u.name     AS created_by_name
+        FROM    tasks t
+        LEFT JOIN users u ON t.created_by = u.id
+        INNER JOIN task_assignments ta ON ta.task_id = t.id
+        WHERE   ta.user_id = ?
+        ORDER BY t.id DESC
+    `, [userId]);
+
+    if (tasks.length === 0) return [];
+
+    const taskIds = tasks.map(t => t.id);
+    const [assignments] = await pool.query(`
+        SELECT  ta.task_id,
+                u.id       AS user_id,
+                u.name     AS user_name,
+                u.document AS user_document
+        FROM    task_assignments ta
+        INNER JOIN users u ON ta.user_id = u.id
+        WHERE   ta.task_id IN (?)
+    `, [taskIds]);
+
+    const assignedMap = {};
+    for (const a of assignments) {
+        if (!assignedMap[a.task_id]) assignedMap[a.task_id] = [];
+        assignedMap[a.task_id].push({
+            id: a.user_id,
+            name: a.user_name,
+            document: a.user_document
+        });
+    }
+
+    return tasks.map(t => ({
+        ...t,
+        assigned_users: assignedMap[t.id] ?? []
+    }));
+    },
+
     /**
      * Devuelve una tarea por su ID con el creador y los usuarios asignados.
      */
