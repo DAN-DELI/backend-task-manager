@@ -49,13 +49,14 @@ export const createTask = catchAsync(async (req, res, next) => {
  */
 export const updateTask = catchAsync(async (req, res, next) => {
     const { id } = req.params;
-    const { user_id, title, description, status } = req.body;
+    const { created_by, title, description, status, assigned_user_ids } = req.body;
 
     const updatedTask = await TaskModel.update(id, {
-        user_id,
+        created_by,
         title,
         description,
-        status
+        status,
+        assigned_user_ids
     });
 
     if (!updatedTask) {
