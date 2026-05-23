@@ -19,6 +19,7 @@ Tiene acceso completo al CRUD de tareas y permiso de solo lectura sobre el lista
 -- ==========================================
 -- 2.1. Permisos de tareas
 INSERT INTO permissions (name, code, description) VALUES 
+('Ver Tareas propias', 'tasks.view.own', 'Permite consultar la lista y el detalle de tareas propias del usuario'),
 ('Ver Tareas', 'tasks.view', 'Permite consultar la lista y el detalle de tareas'),
 ('Crear Tareas', 'tasks.create', 'Permite registrar nuevas tareas en el sistema'),
 ('Actualizar Tareas', 'tasks.update', 'Permite modificar tareas existentes'),
@@ -59,10 +60,10 @@ SELECT 2, id FROM permissions WHERE code IN (
     'users.view'
 );
 
--- 3.3. Aprendiz (ID 3): Ver y actualizar tareas
+-- 3.3. Aprendiz (ID 3): Ver tareas propias y actualizar tareas
 INSERT INTO role_permissions (role_id, permission_id)
 SELECT 3, id FROM permissions WHERE code IN (
-    'tasks.view', 'tasks.update'
+    'tasks.view.own', 'tasks.update'
 );
 
 -- ==========================================
