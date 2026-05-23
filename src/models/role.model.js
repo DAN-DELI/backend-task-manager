@@ -140,6 +140,24 @@ export const RoleModel = {
      * @param {number|string} id ID del rol a eliminar.
      * @returns {Promise<boolean>} True si se eliminó, false si no existía.
      */
+    countUsersWithRole: async (roleId) => {
+        const [rows] = await pool.query(
+            'SELECT COUNT(*) as total FROM user_roles WHERE role_id = ?',
+            [roleId]
+        );
+
+        return rows?.[0]?.total ?? 0;
+    },
+
+    /**
+     * Elimina un rol de la base de datos de forma física.
+     * La base de datos gestiona CASCADE en role_permissions.
+     *
+     * Nota: `user_roles.role_id` tiene `ON DELETE RESTRICT`, por lo que esta operación
+     * fallará si el rol está asignado a algún usuario. El controlador valida esto antes.
+     * @param {number|string} id ID del rol a eliminar.
+     * @returns {Promise<boolean>} True si se eliminó, false si no existía.
+     */
     delete: async (id) => {
         const [result] = await pool.query(
             'DELETE FROM roles WHERE id = ?',
@@ -150,6 +168,7 @@ export const RoleModel = {
     },
 
     /**
+
      * Consulta todos los permisos atómicos asignados a un rol específico.
      * Realiza un JOIN entre role_permissions y permissions para retornar
      * el detalle completo de cada permiso.
