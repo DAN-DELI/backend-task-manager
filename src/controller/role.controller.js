@@ -118,10 +118,31 @@ export const patchRole = catchAsync(async (req, res, next) => {
  */
 export const deleteRole = catchAsync(async (req, res, next) => {
     const { id } = req.params;
+
+    // Validar existencia del rol
+    const roleExists = await RoleModel.findById(id);
+    if (!roleExists) {
+        return next(createError("Error al eliminar el rol", 404, [`No se encontró el rol con el ID ${id}`]));
+    }
+
+    // Nuevo comportamiento por constraint ON DELETE RESTRICT en user_roles.role_id:
+    // no permitir eliminar roles que estén asignados a usuarios.
+    const usersCount = await RoleModel.countUsersWithRole(id);
+    if (usersCount > 0) {
+        return next(createError(
+            "No se puede eliminar el rol",
+            409,
+            [
+                `El rol "${roleExists.name}" está asignado a ${usersCount} usuario(s).`
+            ]
+        ));
+    }
+
     const isDeleted = await RoleModel.delete(id);
     if (!isDeleted) {
         return next(createError("Error al eliminar el rol", 404, [`No se encontró el rol con el ID ${id}`]));
     }
+
     return successResponse(res, 200, "Rol eliminado exitosamente");
 });
 
