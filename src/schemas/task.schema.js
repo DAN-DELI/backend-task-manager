@@ -4,11 +4,12 @@ import { z } from "zod";
 /**
  * Esquema de validación base para la creación y actualización total de tareas.
  * Define las restricciones de tipo, longitud y mensajes de error para cada campo.
+ * Ahora incluye assigned_user_ids para asignación múltiple.
  * @const {z.ZodObject}
  */
 export const taskSchema = z.object({
     /** Identificador del usuario: Obligatorio, debe ser un número entero. */
-    user_id: z.number({
+    created_by: z.number({
         required_error: "El id del usuario es obligatorio",
         invalid_type_error: "El id del usuario debe ser un número entero",
     }).int(),
@@ -30,8 +31,15 @@ export const taskSchema = z.object({
     /** Estado: Opcional, solo permite 'pendiente', 'en-progreso' o 'completada'. */
     status: z.enum(['pendiente', 'en-progreso', 'completada'], {
         errorMap: () => ({ message: "El estado es inválido" }),
-    }).optional()
+    }).optional(),
+    
+    assigned_user_ids: z.array(
+        z.number({ invalid_type_error: "Cada ID de usuario debe ser un número" }).int()
+    ).optional().default([]),
 });
+
+
+
 
 /**
  * Esquema para actualizaciones parciales (PATCH).
