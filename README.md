@@ -2,12 +2,9 @@
 
 API REST para la gestión de tareas con sistema de control de acceso basado en roles (RBAC), desarrollada con Express.js y MySQL.
 
-[![GitHub repo](https://img.shields.io/badge/github-repo-green)](https://github.com/DAN-DELI/backend-task-manager)
-[![License: ISC](https://img.shields.io/badge/License-ISC-blue.svg)](https://opensource.org/licenses/ISC)
-
 ---
 
-## 📋 Tabla de Contenidos
+## Tabla de Contenidos
 
 - [Características](#-características)
 - [Tecnologías](#-tecnologías)
@@ -21,20 +18,20 @@ API REST para la gestión de tareas con sistema de control de acceso basado en r
 
 ---
 
-## ✨ Características
+## Características
 
-- 🔐 **Autenticación JWT** con refresh tokens
-- 🛡️ **Sistema RBAC** (Role-Based Access Control) con permisos granulares
-- 📝 **CRUD de Tareas** con asignación múltiple de usuarios
-- 👥 **Gestión de Usuarios** con roles y permisos
-- ✅ **Validación de datos** con Zod
-- 📧 **Recuperación de contraseña** vía email
-- 🚦 **Rate limiting** para prevenir abuso
-- 🔄 **Pool de conexiones** MySQL para alto rendimiento
+- **Autenticación JWT** con refresh tokens
+- **Sistema RBAC** (Role-Based Access Control) con permisos granulares
+- **CRUD** de tareas y usuarios
+- **Gestión de Usuarios** con roles y permisos
+- **Validación de datos** con Zod
+- **Recuperación de contraseña** vía email
+- **Rate limiting** para prevenir abuso
+- **Pool de conexiones** MySQL para alto rendimiento
 
 ---
 
-## 🛠 Tecnologías
+## Tecnologías
 
 | Tecnología | Versión | Descripción |
 |------------|---------|-------------|
@@ -51,7 +48,7 @@ API REST para la gestión de tareas con sistema de control de acceso basado en r
 
 ---
 
-## 🚀 Inicio Rápido
+## Inicio Rápido
 
 ### Prerrequisitos
 
@@ -75,6 +72,8 @@ cp .env.example .env
 
 # 4. Configura la base de datos
 mysql -u root -p < sql/database.sql
+
+# Lee atentamente el archivo sql/data.sql antes del siguiente paso
 mysql -u root -p inventario_task_manager < sql/security.sql
 
 # 5. Inicia el servidor
@@ -83,11 +82,11 @@ npm run dev
 
 El servidor estará disponible en `http://localhost:3000`
 
-> 📖 Para instrucciones detalladas, consulta la [Guía de Instalación](docs/INSTALL.md)
+> Para instrucciones detalladas, consulta la [Guía de Instalación](docs/INSTALL.md)
 
 ---
 
-## 📚 Documentación
+## Documentación
 
 | Documento | Descripción |
 |-----------|-------------|
@@ -97,7 +96,7 @@ El servidor estará disponible en `http://localhost:3000`
 
 ---
 
-## 📁 Estructura del Proyecto
+## Estructura del Proyecto
 
 ```
 backend-task-manager/
@@ -148,13 +147,13 @@ backend-task-manager/
 
 ---
 
-## 🛡️ Sistema de Roles (RBAC)
+## Sistema de Roles (RBAC)
 
 El sistema implementa tres roles con permisos diferenciados:
 
 | Rol | Descripción | Permisos de Tareas |
 |-----|-------------|-------------------|
-| **Administrador** | Control total del sistema | Todos (`tasks.view`, `tasks.view.own`, `tasks.create`, `tasks.update`, `tasks.delete`) |
+| **Administrador** | Control total del sistema | Todos |
 | **Evaluador** | Supervisa aprendices y gestiona tareas | CRUD completo (`tasks.view`, `tasks.create`, `tasks.update`, `tasks.delete`) |
 | **Aprendiz** | Gestiona solo sus tareas asignadas | Solo propias (`tasks.view.own`, `tasks.update`) |
 
@@ -167,11 +166,11 @@ Los permisos son granulares y se asignan por rol:
 - **Roles:** `roles.view`, `roles.create`, `roles.update`, `roles.delete`, `roles.assign`
 - **Permisos:** `permissions.view`, `user-roles.assign`
 
-> 📖 Consulta la [Documentación RBAC](docs/RBAC.md) para detalles completos.
+> Consulta la [Documentación RBAC](docs/RBAC.md) para detalles completos.
 
 ---
 
-## 🌐 Endpoints Principales
+## Endpoints Principales
 
 ### Autenticación (Público)
 
@@ -206,11 +205,11 @@ Los permisos son granulares y se asignan por rol:
 | PATCH | `/api/users/:id` | `users.update` | Actualizar parcialmente |
 | DELETE | `/api/users/:id` | `users.delete` | Eliminar usuario |
 
-> 📖 Consulta la [Documentación de API](docs/API.md) para todos los endpoints y ejemplos.
+> Consulta la [Documentación de API](docs/API.md) para todos los endpoints y ejemplos.
 
 ---
 
-## 🤝 Contribución
+## Contribución
 
 1. Haz fork del repositorio
 2. Crea una rama para tu feature (`git checkout -b feature/AmazingFeature`)
@@ -220,15 +219,10 @@ Los permisos son granulares y se asignan por rol:
 
 Por favor, sigue los acuerdos del equipo documentados en [TEAM_AGREEMENT.md](TEAM_AGREEMENT.md).
 
----
-
-## 📄 Licencia
-
-Este proyecto está bajo la licencia ISC. Ver el archivo [LICENSE](LICENSE) para detalles.
 
 ---
 
-## 👥 Equipo
+## Equipo
 
 | Nombre | Rol | GitHub |
 |--------|-----|--------|
@@ -236,17 +230,11 @@ Este proyecto está bajo la licencia ISC. Ver el archivo [LICENSE](LICENSE) para
 | Manuel Enrique Serrano Barajas | Desarrollador | [@Serranomanuel](https://github.com/Serranomanuel) |
 | Wilmer Ferney Ardila Ordoñez | Desarrollador | [@Tachobo](https://github.com/Tachobo) |
 
----
-
-## 📞 Soporte
-
-- 📧 Email: [tu-email@ejemplo.com]
-- 💬 Issues: [GitHub Issues](https://github.com/DAN-DELI/backend-task-manager/issues)
 
 ---
 
 <div align="center">
 
-**Backend Task Manager** — Desarrollado con ❤️ por el equipo de desarrollo
+**Backend Task Manager**
 
 </div>

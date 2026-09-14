@@ -63,7 +63,7 @@ POST /api/auth/login
 **Body:**
 ```json
 {
-  "email": "juan@example.com",
+  "document": "1234567891",
   "password": "contraseña_segura"
 }
 ```
