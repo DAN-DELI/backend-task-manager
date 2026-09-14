@@ -1,7 +1,6 @@
 import { TaskModel } from '../models/task.model.js';
 import { createError, successResponse } from '../utils/response.handler.js';
 import { catchAsync } from '../utils/catchAsync.js';
-import { UserModel } from '../models/user.model.js';
 
 /**
  * Obtiene el listado completo de tareas.
@@ -9,19 +8,7 @@ import { UserModel } from '../models/user.model.js';
  * @returns {Promise<void>} Responde con un array de todas las tareas encontradas.
  */
 export const getTask = catchAsync(async (req, res, next) => {
-    const userId = req.user.id;
-
-    const userRoles = await UserModel.getRoles(userId);
-    const roleNames = userRoles.map(r => r.name);
-
-    const canSeeAll = roleNames.some(r =>
-        ['Administrador', 'Evaluador'].includes(r)
-    );
-
-    const tasks = canSeeAll
-        ? await TaskModel.findAll()
-        : await TaskModel.findByUserId(userId);
-
+    const tasks = await TaskModel.findAll();
     return successResponse(res, 200, "Tareas listadas exitosamente", tasks);
 });
 
