@@ -9,7 +9,9 @@ CREATE USER IF NOT EXISTS 'app_user_3233198'@'localhost' IDENTIFIED BY '#ADSO_32
 CREATE DATABASE IF NOT EXISTS inventario_task_manager;
 
 -- Permisos
-GRANT ALL PRIVILEGES ON inventario_task_manager.* TO 'app_user_3233198'@'localhost';
+GRANT ALL PRIVILEGES ON inventario_task_manager.* TO 'app_user_3233198'@'localhost'; -- Usuario local
+
+GRANT ALL PRIVILEGES ON inventario_task_manager.* TO 'app_user_3233198'@'%'; -- Usuario remoto
 
 FLUSH PRIVILEGES;
 
@@ -26,7 +28,7 @@ USE inventario_task_manager;
 CREATE TABLE users (
     id INT AUTO_INCREMENT PRIMARY KEY,
     name VARCHAR(100) NOT NULL,
-    email VARCHAR(100) NOT NULL,
+    email VARCHAR(100) NOT NULL UNIQUE,
     document VARCHAR(20) NOT NULL UNIQUE,
     password_hash VARCHAR(255) NOT NULL,
     refresh_token VARCHAR (500) NULL,
@@ -39,18 +41,38 @@ CREATE TABLE users (
 -- ------------------------------------------
 CREATE TABLE tasks (
     id INT AUTO_INCREMENT PRIMARY KEY,
-    user_id INT NOT NULL,
+    created_by  INT NOT NULL,
     title VARCHAR(150) NOT NULL,
     description TEXT NOT NULL,
     status ENUM('pendiente', 'en-progreso', 'completada') DEFAULT 'pendiente',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
 
-    CONSTRAINT fk_task_user
-    FOREIGN KEY (user_id)
+    CONSTRAINT fk_task_created_by
+    FOREIGN KEY (created_by)
     REFERENCES users(id)
     ON DELETE RESTRICT
     ON UPDATE CASCADE
+);
+
+-- ------------------------------------------
+-- TABLA task_assignments  (Pivote: Tareas <-> Usuarios)
+-- Relación muchos-a-muchos:
+--   Una tarea puede asignarse a N usuarios.
+--   Un usuario puede tener N tareas asignadas.
+-- ------------------------------------------
+CREATE TABLE task_assignments (
+    task_id INT NOT NULL,
+    user_id INT NOT NULL,
+    PRIMARY KEY (task_id, user_id),
+    CONSTRAINT fk_ta_task
+        FOREIGN KEY (task_id) REFERENCES tasks(id)
+        ON DELETE CASCADE
+        ON UPDATE CASCADE,
+    CONSTRAINT fk_ta_user
+        FOREIGN KEY (user_id) REFERENCES users(id)
+        ON DELETE CASCADE
+        ON UPDATE CASCADE
 );
 
 -- ------------------------------------------
@@ -107,7 +129,8 @@ CREATE TABLE user_roles (
         ON DELETE CASCADE,
     CONSTRAINT fk_ur_role 
         FOREIGN KEY (role_id) REFERENCES roles(id) 
-        ON DELETE CASCADE
+        ON DELETE RESTRICT
+        ON UPDATE CASCADE
 );
 
 -- ------------------------------------------

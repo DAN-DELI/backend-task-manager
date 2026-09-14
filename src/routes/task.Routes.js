@@ -6,7 +6,8 @@ import {
     createTask,
     deleteTask,
     getTaskById,
-    updateTaskPartial
+    updateTaskPartial,
+    getMyTasks
 } from "../controller/tasks.controller.js";
 import { validateSchema } from "../middlewares/validator.middleware.js";
 import { taskSchema, taskPartialSchema } from "../schemas/task.schema.js";
@@ -22,6 +23,13 @@ const tasksRouter = express.Router();
 
 // Todas las rutas son protegidas con la verificacion del token
 tasksRouter.use(verifyToken);
+
+/**
+ * @route   GET /api/tasks/my-tasks
+ * @desc    Obtener las tareas asignadas al usuario autenticado
+ * @access  Privado
+ */
+tasksRouter.get('/my-tasks', checkPermission("tasks.view.own"), getMyTasks);
 
 /**
  * @route   GET /api/tasks

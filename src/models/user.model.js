@@ -8,27 +8,43 @@ export const UserModel = {
 
     /**
      * Obtiene todos los usuarios registrados sin filtros.
-     * @returns {Promise<Array>} Lista de usuarios.
+     * @returns {Promise<Array>} Lista de usuarios (sin roles, para evitar duplicados).
      */
     findAll: async () => {
-        const [rows] = await pool.query("SELECT * FROM users");
+        const [rows] = await pool.query(`
+            SELECT u.* 
+            FROM users u
+            ORDER BY u.id DESC
+        `);
         return rows;
     },
 
     /**
-     * Busca un usuario por su ID e inicializa su lista de tareas.
+     * Busca un usuario por su ID (solo datos básicos, sin roles).
      * @param {number|string} id - ID único del usuario.
-     * @returns {Promise<Object|null>} Usuario con propiedad 'tasks' vacía o null.
+     * @returns {Promise<Object|null>} Usuario o null.
      */
     findById: async (id) => {
         const [rows] = await pool.query(
-            "SELECT * FROM users WHERE id = ?",
+            `SELECT u.* 
+            FROM users u
+            WHERE u.id = ?`,
             [id]
         );
+        return rows[0] || null;
+    },
 
-        if (!rows[0]) return null;
-
-        return rows[0];
+    /**
+     * Busca un usuario por su ID incluyendo sus roles.
+     * @param {number|string} id - ID único del usuario.
+     * @returns {Promise<Object|null>} Usuario con array `roles` o null.
+     */
+    findByIdWithRoles: async (id) => {
+        const user = await UserModel.findById(id);
+        if (!user) return null;
+        
+        const roles = await UserModel.getRoles(id);
+        return { ...user, roles };
     },
     /**
      * Busca usuarios por su número de documento.
@@ -44,6 +60,14 @@ export const UserModel = {
         return rows[0];
     },
 
+    findByEmail: async (email) => {
+        const [rows] = await pool.query(
+            "SELECT * FROM users WHERE email = ?",
+            [email]
+        );
+        return rows[0] || null;
+    },
+    
     /**
      * Registra un nuevo usuario y devuelve el objeto creado.
      * @param {Object} userData - Datos del usuario.

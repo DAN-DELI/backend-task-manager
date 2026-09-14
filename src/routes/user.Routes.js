@@ -1,10 +1,11 @@
 import express from 'express';
 import { verifyToken } from "../middlewares/auth.middleware.js" // Validador de token
-import { getUsers, createUser, updateUser, updateUserPartial, deleteUser, getUserRoles, getUserPermissions, getUserRolesWithPermissions } from '../controller/users.controller.js';
+import { getUsers, createUser, updateUser, updateUserPartial, updateOwnProfile, deleteUser, getUserRoles, getUserPermissions, getUserRolesWithPermissions, changePassword } from '../controller/users.controller.js';
 import { validateSchema } from '../middlewares/validator.middleware.js';
-import { userSchema, userPartialSchema } from '../schemas/user.schema.js';
+import { userSchema, userPartialSchema, changePasswordSchema } from '../schemas/user.schema.js';
 import { checkPermission } from '../middlewares/permissions.middleware.js';
 import { idParamSchema } from '../schemas/role.schema.js';
+import { profileUpdateLimiter } from '../middlewares/rateLimit.middleware.js';
 
 /**
  * Enrutador de Usuarios (Users).
@@ -59,18 +60,38 @@ usersRouter.get("/:id/roles-with-permissions", checkPermission("roles.view"), va
 usersRouter.post('/', checkPermission("users.create"), validateSchema(userSchema), createUser);
 
 /**
+ * @route   POST /users/:id/change-password
+ * @desc    Cambiar contraseña del usuario autenticado desde settings
+ * @access  Privado (solo el propio usuario)
+ */
+usersRouter.post('/:id/change-password', profileUpdateLimiter,validateSchema(idParamSchema, "params"), validateSchema(changePasswordSchema), changePassword);
+
+/**
+ * @route   PATCH /users/:id/profile
+ * @desc    Actualización del propio perfil (nombre y/o email) sin permisos de admin
+ * @access  Privado (solo el propio usuario)
+ */
+usersRouter.patch('/:id/profile', profileUpdateLimiter,validateSchema(idParamSchema, "params"), updateOwnProfile);
+
+/**
  * @route   PUT /users/:id
  * @desc    Actualización completa de un usuario
  * @access  Privado
  */
-usersRouter.put('/:id', checkPermission("users.update"), validateSchema(userPartialSchema), updateUser);
+usersRouter.put('/:id/profile', profileUpdateLimiter,validateSchema(idParamSchema, "params"), updateOwnProfile);
 
 /**
  * @route   PATCH /users/:id
- * @desc    Actualización parcial de un usuario
+ * @desc    Actualizar parcialmente un usuario (admin editando a un usuario)
  * @access  Privado
  */
-usersRouter.patch('/:id', checkPermission("users.update"), validateSchema(userPartialSchema), updateUserPartial);
+usersRouter.patch(
+    '/:id', 
+    checkPermission("users.update"), 
+    validateSchema(idParamSchema, "params"), 
+    validateSchema(userPartialSchema), 
+    updateUserPartial
+);
 
 /**
  * @route   DELETE /users/:id

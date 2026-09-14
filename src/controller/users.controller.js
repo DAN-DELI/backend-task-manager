@@ -1,4 +1,5 @@
 import { UserModel } from '../models/user.model.js';
+import { UserRoleModel } from '../models/user-role.model.js';
 import { PasswordResetModel } from '../models/password-reset.model.js';
 import { createError, successResponse } from '../utils/response.handler.js';
 import { catchAsync } from '../utils/catchAsync.js';
@@ -20,18 +21,33 @@ export const getUsers = catchAsync(async (req, res, next) => {
     let result;
 
     if (id) {
-        const user = await UserModel.findById(id);
+        // Un solo usuario con sus roles
+        const user = await UserModel.findByIdWithRoles(id);
         if (!user) {
             return next(createError("Usuario no encontrado", 404));
         }
         result = [user];
     } else if (document) {
-        result = await UserModel.findByDocument(document);
-        if (result.length === 0) {
+        const users = await UserModel.findByDocument(document);
+        if (!users || users.length === 0) {
             return next(createError("Usuario no encontrado", 404));
         }
+        // Enriquecer con roles
+        result = await Promise.all(
+            (Array.isArray(users) ? users : [users]).map(async (u) => {
+                const roles = await UserModel.getRoles(u.id);
+                return { ...u, roles };
+            })
+        );
     } else {
-        result = await UserModel.findAll();
+        // Todos los usuarios con sus roles
+        const users = await UserModel.findAll();
+        result = await Promise.all(
+            users.map(async (u) => {
+                const roles = await UserModel.getRoles(u.id);
+                return { ...u, roles };
+            })
+        );
     }
 
     return successResponse(res, 200, "Usuarios consultados con éxito", result);
@@ -43,28 +59,49 @@ export const getUsers = catchAsync(async (req, res, next) => {
  * @returns {Promise<void>} Responde con el usuario creado y status 201.
  */
 export const createUser = catchAsync(async (req, res, next) => {
-    const { name, email, document, password } = req.body;
+    const { name, email, document, password, roleIds, roleId } = req.body;
 
-    // Hash de contraseña
-    const salt = await bcrypt.genSalt(10);
-    const password_hash = await bcrypt.hash(password, salt);
+    try {
+        const salt = await bcrypt.genSalt(10);
+        const password_hash = await bcrypt.hash(password, salt);
 
-    // Construcción del objeto limpio
-    const userData = {
-        name,
-        email,
-        document,
-        password_hash
-    };
+        const newUser = await UserModel.create({ name, email, document, password_hash });
+        
+        // ─── Sincronizar roles (soporta múltiples) ───
+        const rolesToAssign = roleIds || (roleId ? [roleId] : []);
+        if (rolesToAssign.length > 0) {
+            await UserModel.syncRoles(newUser.id, rolesToAssign);
+        }
 
-    // Creación en DB
-    const newUser = await UserModel.create(userData);
+        // Enriquecer la respuesta con los roles asignados
+        const userWithRoles = await UserModel.findById(newUser.id);
+        const userRoles = await UserModel.getRoles(newUser.id);
+        
+        const responseData = {
+            ...userWithRoles,
+            roles: userRoles
+        };
 
-    // Registrar la primera contraseña en el historial
-    await PasswordResetModel.saveToHistory(newUser.id, password_hash);
+        await PasswordResetModel.saveToHistory(newUser.id, password_hash);
+        
+        return successResponse(res, 201, "Usuario creado con éxito", responseData);
 
-    return successResponse(res, 201, "Usuario creado con exito", newUser);
-});
+    } catch (error) {
+    if (error.code === 'ER_DUP_ENTRY') {
+            if (error.message.includes('document')) {
+                return next(createError("Este documento ya está registrado por otro usuario", 400, [
+                    { field: 'document', message: 'Este documento ya está registrado por otro usuario' }
+                ]));
+            }
+            if (error.message.includes('email')) {
+                return next(createError("Este correo electrónico ya está en uso", 400, [
+                    { field: 'email', message: 'Este correo electrónico ya está en uso' }
+                ]));
+            }
+        }
+    return next(error);
+}});
+
 
 /**
  * Actualización completa de un usuario (Reemplazo).
@@ -93,45 +130,83 @@ export const updateUser = catchAsync(async (req, res, next) => {
 });
 
 /**
- * Actualización parcial de un usuario (PATCH).
+ * Actualización parcial de un usuario (admin editando).
  * @route PATCH /users/:id
- * @param {string} req.params.id - ID del usuario.
- * @param {Object} req.body - Campos a modificar.
- * @returns {Promise<void>} Responde con un array que contiene al usuario actualizado.
- * @throws {Error} 404 - Si el usuario no existe.
- * @throws {Error} 400 - Si no se envían campos para actualizar.
  */
 export const updateUserPartial = catchAsync(async (req, res, next) => {
     const { id } = req.params;
-    const userData = req.body;
+    const { roleIds, roleId, ...userData } = req.body;
 
     const userExists = await UserModel.findById(id);
     if (!userExists) {
-        return next(createError("Usuario no encontrado", 404, [`No se encontro al usuario con id ${id}`]));
+        return next(createError("Usuario no encontrado", 404));
     }
 
-    if (Object.keys(userData).length === 0) {
+    // ─── Normalizar roles a array ───
+    const rolesToAssign = roleIds || (roleId ? [roleId] : null);
+
+    // 🔒 CANDADO DE SEGURIDAD: Evitar quitar el rol de Admin al último Admin
+    if (rolesToAssign !== null) {
+        const currentRoles = await UserModel.getRoles(id);
+        const hadAdmin = currentRoles.some(r => r.id === 1);
+        const willHaveAdmin = rolesToAssign.includes(1);
+        
+        if (hadAdmin && !willHaveAdmin) {
+            const adminCount = await UserRoleModel.countUsersWithRole(1);
+            if (adminCount <= 1) {
+                return next(createError("Operación denegada: El sistema debe tener al menos un Administrador.", 403));
+            }
+        }
+    }
+
+    if (Object.keys(userData).length === 0 && rolesToAssign === null) {
         return next(createError("Debes enviar al menos un campo para actualizar", 400));
     }
 
-    const updatedUser = await UserModel.updatePartial(id, userData);
+    let updatedUser = userExists;
 
-    return successResponse(res, 200, `Usuario actualizado exitosamente`, [updatedUser]);
+    // Actualizar datos básicos si hay
+    if (Object.keys(userData).length > 0) {
+        updatedUser = await UserModel.updatePartial(id, userData);
+    }
+
+    // ─── Sincronizar roles si se enviaron ───
+    if (rolesToAssign !== null) {
+        await UserModel.syncRoles(id, rolesToAssign);
+    }
+
+    // Enriquecer respuesta con roles actualizados
+    const finalUser = await UserModel.findById(id);
+    const finalRoles = await UserModel.getRoles(id);
+    
+    const responseData = {
+        ...finalUser,
+        roles: finalRoles
+    };
+
+    return successResponse(res, 200, "Usuario actualizado exitosamente", [responseData]);
 });
 
-/**
- * Elimina de forma definitiva a un usuario.
- * @route DELETE /users/:id
- * @param {string} req.params.id - ID del usuario a eliminar.
- * @returns {Promise<void>} Responde con mensaje de éxito.
- * @throws {Error} 404 - Si el ID no corresponde a ningún usuario.
- */
 export const deleteUser = catchAsync(async (req, res, next) => {
     const { id } = req.params;
 
+    // Primero buscamos al usuario para saber qué rol tiene
+    const userExists = await UserModel.findById(id);
+    if (!userExists) {
+        return next(createError("Usuario no encontrado", 404));
+    }
+
+    // 🔒 CANDADO DE SEGURIDAD: Evitar borrar al último Admin
+    if (userExists.roleId === 1) {
+        const adminCount = await UserRoleModel.countUsersWithRole(1);
+        if (adminCount <= 1) {
+            return next(createError("Operación denegada: No puedes eliminar al último Administrador del sistema.", 403));
+        }
+    }
+
     const isDeleted = await UserModel.delete(id);
     if (!isDeleted) {
-        return next(createError("No se pudo eliminar el usuario", 404, [`Usuario con id ${id} no encontrado`]));
+        return next(createError("No se pudo eliminar el usuario", 400));
     }
 
     return successResponse(res, 200, `Usuario eliminado correctamente`);
@@ -196,4 +271,122 @@ export const getUserRolesWithPermissions = catchAsync(async (req, res, next) => 
     // Lógica clave: Obtener estructura anidada de roles con permisos asociados
     const rolesWithPermissions = await UserModel.getRolesWithPermissions(id);
     return successResponse(res, 200, "Roles y permisos del usuario obtenidos con éxito", rolesWithPermissions);
+
+});
+
+
+
+/**
+ * Cambia la contraseña de un usuario autenticado desde settings.
+ * Verifica la contraseña actual, valida que la nueva no esté en el historial
+ * y actualiza el hash en la base de datos.
+ * @route POST /api/users/:id/change-password
+ * @param {string} req.params.id       - ID del usuario.
+ * @param {string} req.body.currentPassword - Contraseña actual para verificar identidad.
+ * @param {string} req.body.newPassword     - Nueva contraseña a establecer.
+ * @returns {Promise<void>} Responde con mensaje de éxito o error.
+ */
+export const changePassword = catchAsync(async (req, res, next) => {
+    const { id } = req.params;
+    const { currentPassword, newPassword } = req.body;
+
+    // Paso 1: Verificar que el usuario existe
+    const user = await UserModel.findById(id);
+    if (!user) {
+        return next(createError("Usuario no encontrado", 404));
+    }
+
+    // Paso 2: Obtener el hash actual y verificar la contraseña actual
+    const currentHash = await PasswordResetModel.getCurrentPasswordHash(id);
+    const isCurrentValid = await bcrypt.compare(currentPassword, currentHash);
+    if (!isCurrentValid) {
+        return next(createError("La contraseña actual es incorrecta", 400, [
+            { field: "currentPassword", message: "La contraseña actual no coincide con la registrada" }
+        ]));
+    }
+
+    // Paso 3: Verificar que la nueva contraseña no sea igual a la actual
+    const isSameAsCurrent = await bcrypt.compare(newPassword, currentHash);
+    if (isSameAsCurrent) {
+        return next(createError("La nueva contraseña no puede ser igual a la actual", 400, [
+            { field: "newPassword", message: "Elige una contraseña diferente a la actual" }
+        ]));
+    }
+
+    // Paso 4: Verificar que la nueva contraseña no esté en el historial
+    const history = await PasswordResetModel.getPasswordHistory(id);
+    for (const entry of history) {
+        const isInHistory = await bcrypt.compare(newPassword, entry.password_hash);
+        if (isInHistory) {
+            return next(createError("Contraseña ya utilizada anteriormente", 400, [
+                { field: "newPassword", message: "No puedes reutilizar una contraseña reciente" }
+            ]));
+        }
+    }
+
+    // Paso 5: Guardar la contraseña actual en el historial antes de reemplazarla
+    await PasswordResetModel.saveToHistory(id, currentHash);
+
+    // Paso 6: Hashear la nueva contraseña y actualizarla
+    const salt = await bcrypt.genSalt(10);
+    const newHash = await bcrypt.hash(newPassword, salt);
+    await PasswordResetModel.updatePassword(id, newHash);
+
+    // Paso 7: Limpiar el historial para no acumular entradas infinitas
+    await PasswordResetModel.pruneHistory(id);
+
+    return successResponse(res, 200, "Contraseña actualizada exitosamente");
+});
+
+/**
+ * Permite a un usuario autenticado actualizar su propio nombre,email y/o documento.
+ * No requiere permiso administrativo — solo valida que el id del token
+ * coincida con el id del parámetro de ruta.
+ * @route PATCH /users/:id/profile
+ */
+export const updateOwnProfile = catchAsync(async (req, res, next) => {
+    const { id } = req.params;
+
+    // Solo el propio usuario puede editar su perfil
+    if (String(req.user.id) !== String(id)) {
+        return next(createError("No puedes editar el perfil de otro usuario", 403));
+    }
+
+    const { name, email, document } = req.body;
+
+    if (!name && !email && !document) {
+        return next(createError("Debes enviar al menos un campo para actualizar", 400));
+    }
+
+    const userData = {};
+    if (name)     userData.name     = name;
+    if (email)    userData.email    = email;
+    if (document) userData.document = document;
+
+    const errors = [];
+
+    if (userData.email) {
+        const emailExists = await UserModel.findByEmail(userData.email);
+        if (emailExists && String(emailExists.id) !== String(id)) {
+            errors.push({ field: 'email', message: 'Este correo electrónico ya está en uso' });
+        }
+    }
+
+    if (userData.document) {
+        const docExists = await UserModel.findByDocument(userData.document);
+        if (docExists && String(docExists.id) !== String(id)) {
+            errors.push({ field: 'document', message: 'Este documento ya está registrado por otro usuario' });
+        }
+    }
+
+    if (errors.length > 0) {
+        return next(createError("Algunos datos ya están en uso", 400, errors));
+    }
+
+    try {
+        const updatedUser = await UserModel.updatePartial(id, userData);
+        return successResponse(res, 200, "Perfil actualizado exitosamente", [updatedUser]);
+    } catch (err) {
+        return next(err);
+    }
 });

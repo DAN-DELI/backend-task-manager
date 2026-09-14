@@ -49,13 +49,14 @@ export const createTask = catchAsync(async (req, res, next) => {
  */
 export const updateTask = catchAsync(async (req, res, next) => {
     const { id } = req.params;
-    const { user_id, title, description, status } = req.body;
+    const { created_by, title, description, status, assigned_user_ids } = req.body;
 
     const updatedTask = await TaskModel.update(id, {
-        user_id,
+        created_by,
         title,
         description,
-        status
+        status,
+        assigned_user_ids
     });
 
     if (!updatedTask) {
@@ -107,4 +108,15 @@ export const deleteTask = catchAsync(async (req, res, next) => {
     }
 
     return successResponse(res, 200, "Tarea eliminada exitosamente");
+});
+
+/**
+ * Obtiene el listado de tareas asignadas al usuario autenticado.
+ * @route GET /tasks/my-tasks
+ * @returns {Promise<void>} Responde con un array de tareas asignadas al usuario.
+ */
+export const getMyTasks = catchAsync(async (req, res, next) => {
+    const userId = req.user.id;
+    const tasks = await TaskModel.findByUserId(userId);
+    return successResponse(res, 200, "Tareas propias listadas exitosamente", tasks);
 });

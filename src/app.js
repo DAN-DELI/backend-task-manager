@@ -16,8 +16,12 @@ const app = express();
  */
 // Habilita el intercambio de recursos de origen cruzado (CORS)
 app.use(cors({
-    origin: 'http://localhost:5173'
+    origin: `*`,
+    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+    optionsSuccessStatus: 204,
 }));
+
 // Middleware para parsear cuerpos de peticiones en formato JSON
 app.use(express.json());
 // Middleware para parsear cuerpos de peticiones codificados en URL (formularios)
@@ -39,8 +43,8 @@ app.get('/', (req, res) => {
  */
 app.use("/api/auth", authRouter); // Prefijo para rutas de autenticacion
 app.use("/api/auth", forgotRouter);
-app.use('/tasks', tasksRouter); // Prefijo para rutas de tareas
-app.use('/users', usersRouter); // Prefijo para rutas de usuarios
+app.use('/api/tasks', tasksRouter); // Prefijo para rutas de tareas
+app.use('/api/users', usersRouter); // Prefijo para rutas de usuarios
 
 // Rutas RBCA
 app.use('/api/roles', roleRouter); // Prefijo para ruta de roles
@@ -53,9 +57,5 @@ app.use('/api/userRoles', userRolesRouter); // Prefijo para ruta de asignacion d
  */
 app.use(globalErrorHandler);
 
-/**
- * Inicia el servidor y lo pone a la escucha de peticiones.
- */
-app.listen(port, () => {
-    console.log(`example app listening on port ${port}`);
-})
+
+export default app;
